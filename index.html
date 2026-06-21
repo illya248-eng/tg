@@ -1,81 +1,2945 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tech Shop Mini App</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #fff);
-            color: var(--tg-theme-text-color, #000);
-            margin: 0;
-            padding: 15px;
-        }
-        h2 { text-align: center; color: #333; margin-bottom: 20px; }
-        .product-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        .product-card {
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .product-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; }
-        .product-price { color: #2ecc71; font-weight: bold; margin-bottom: 12px; }
-        .buy-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-        }
-        .buy-btn:active { background: #2980b9; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Shop — Telegram Mini App</title>
+
+  <!-- ═══════════════════════════════════════════════
+       Telegram Web App SDK
+  ═══════════════════════════════════════════════ -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    /* ═══════════════════════════════════════════════
+       DESIGN TOKENS — iOS 26 + Glassmorphism
+    ═══════════════════════════════════════════════ */
+    :root {
+      /* Colors — Light */
+      --c-bg:          #F2F2F7;
+      --c-surface:     rgba(255,255,255,0.72);
+      --c-surface-2:   rgba(255,255,255,0.55);
+      --c-border:      rgba(0,0,0,0.08);
+      --c-text:        #1C1C1E;
+      --c-text-2:      #636366;
+      --c-text-3:      #AEAEB2;
+      --c-accent:      #007AFF;
+      --c-accent-2:    #5856D6;
+      --c-red:         #FF3B30;
+      --c-green:       #34C759;
+      --c-yellow:      #FF9F0A;
+      --c-card-bg:     rgba(255,255,255,0.85);
+      --c-nav-bg:      rgba(249,249,249,0.88);
+      --c-input-bg:    rgba(118,118,128,0.12);
+      --c-badge:       #FF3B30;
+
+      /* Blur */
+      --blur-sm:   blur(8px);
+      --blur-md:   blur(16px);
+      --blur-lg:   blur(24px);
+
+      /* Radius */
+      --r-xs:  8px;
+      --r-sm:  12px;
+      --r-md:  16px;
+      --r-lg:  20px;
+      --r-xl:  24px;
+      --r-2xl: 30px;
+
+      /* Shadows */
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+      --shadow-card: 0 2px 16px rgba(0,0,0,0.10);
+
+      /* Typography */
+      --f-display: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif;
+      --f-body:    -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+
+      /* Transitions */
+      --tr-fast:   150ms cubic-bezier(0.4,0,0.2,1);
+      --tr-normal: 280ms cubic-bezier(0.4,0,0.2,1);
+      --tr-slow:   450ms cubic-bezier(0.4,0,0.2,1);
+
+      /* Nav */
+      --nav-h: 60px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Dark theme — автоматично від Telegram */
+    [data-theme="dark"] {
+      --c-bg:        #000000;
+      --c-surface:   rgba(28,28,30,0.85);
+      --c-surface-2: rgba(44,44,46,0.75);
+      --c-border:    rgba(255,255,255,0.10);
+      --c-text:      #FFFFFF;
+      --c-text-2:    #AEAEB2;
+      --c-text-3:    #636366;
+      --c-card-bg:   rgba(28,28,30,0.90);
+      --c-nav-bg:    rgba(18,18,18,0.88);
+      --c-input-bg:  rgba(118,118,128,0.18);
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      height: 100%;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: var(--f-body);
+      background: var(--c-bg);
+      color: var(--c-text);
+      height: 100%;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      transition: background var(--tr-normal), color var(--tr-normal);
+    }
+
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    input  { font-family: inherit; border: none; outline: none; background: none; }
+    a      { text-decoration: none; color: inherit; }
+    img    { display: block; width: 100%; height: 100%; object-fit: cover; }
+    ul     { list-style: none; }
+
+    /* Scrollable content area */
+    .scroll-view {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .scroll-view::-webkit-scrollbar { display: none; }
+
+    /* ═══════════════════════════════════════════════
+       LAYOUT
+    ═══════════════════════════════════════════════ */
+    #app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Pages container */
+    #pages {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Individual page */
+    .page {
+      position: absolute;
+      inset: 0;
+      padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 8px);
+      display: none;
+      flex-direction: column;
+    }
+    .page.active { display: flex; }
+
+    /* Page content scroll zone */
+    .page-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 0 0 16px;
+    }
+    .page-body::-webkit-scrollbar { display: none; }
+
+    /* ═══════════════════════════════════════════════
+       BOTTOM NAVIGATION
+    ═══════════════════════════════════════════════ */
+    #nav {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      height: calc(var(--nav-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: var(--c-nav-bg);
+      backdrop-filter: var(--blur-lg);
+      -webkit-backdrop-filter: var(--blur-lg);
+      border-top: 1px solid var(--c-border);
+      display: flex;
+      align-items: stretch;
+      z-index: 100;
+    }
+
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: var(--c-text-3);
+      transition: color var(--tr-fast);
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-item.active { color: var(--c-accent); }
+
+    .nav-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    .nav-badge {
+      position: absolute;
+      top: 6px;
+      right: calc(50% - 18px);
+      background: var(--c-badge);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 8px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-badge.visible { display: flex; }
+
+    /* ═══════════════════════════════════════════════
+       GLASSMORPHISM CARD
+    ═══════════════════════════════════════════════ */
+    .glass-card {
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-md);
+      -webkit-backdrop-filter: var(--blur-md);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow-card);
+    }
+
+    /* ═══════════════════════════════════════════════
+       PAGE HEADER
+    ═══════════════════════════════════════════════ */
+    .page-header {
+      padding: 12px 16px 8px;
+      background: var(--c-nav-bg);
+      backdrop-filter: var(--blur-md);
+      -webkit-backdrop-filter: var(--blur-md);
+      border-bottom: 1px solid var(--c-border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: var(--f-display);
+      letter-spacing: -0.5px;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--c-text-2);
+      margin-top: 2px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SEARCH BAR
+    ═══════════════════════════════════════════════ */
+    .search-bar {
+      margin: 12px 16px 8px;
+      background: var(--c-input-bg);
+      border-radius: var(--r-lg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      transition: background var(--tr-fast);
+    }
+    .search-bar:focus-within {
+      background: var(--c-surface);
+      box-shadow: 0 0 0 2px var(--c-accent);
+    }
+
+    .search-icon { font-size: 16px; opacity: 0.5; flex-shrink: 0; }
+
+    .search-input {
+      flex: 1;
+      font-size: 15px;
+      color: var(--c-text);
+      caret-color: var(--c-accent);
+    }
+    .search-input::placeholder { color: var(--c-text-3); }
+
+    /* ═══════════════════════════════════════════════
+       SECTION
+    ═══════════════════════════════════════════════ */
+    .section { margin: 16px 0; }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 0 16px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: var(--f-display);
+      letter-spacing: -0.3px;
+    }
+    .section-link {
+      font-size: 14px;
+      color: var(--c-accent);
+      font-weight: 500;
+    }
+
+    /* ═══════════════════════════════════════════════
+       BANNER CAROUSEL
+    ═══════════════════════════════════════════════ */
+    .banner-scroll {
+      display: flex;
+      gap: 12px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .banner-scroll::-webkit-scrollbar { display: none; }
+
+    .banner-card {
+      flex-shrink: 0;
+      width: calc(100vw - 32px);
+      height: 160px;
+      border-radius: var(--r-xl);
+      overflow: hidden;
+      scroll-snap-align: start;
+      position: relative;
+      box-shadow: var(--shadow-md);
+    }
+
+    .banner-bg {
+      position: absolute;
+      inset: 0;
+    }
+
+    .banner-content {
+      position: absolute;
+      inset: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%);
+    }
+
+    .banner-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.3);
+      margin-bottom: 6px;
+      align-self: flex-start;
+    }
+
+    .banner-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      font-family: var(--f-display);
+    }
+
+    .banner-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+      margin-top: 2px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       CATEGORY CHIPS
+    ═══════════════════════════════════════════════ */
+    .cats-scroll {
+      display: flex;
+      gap: 10px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .cats-scroll::-webkit-scrollbar { display: none; }
+
+    .cat-chip {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cat-icon-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--r-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      transition: transform var(--tr-fast);
+      box-shadow: var(--shadow-sm);
+    }
+    .cat-chip:active .cat-icon-wrap { transform: scale(0.93); }
+
+    .cat-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--c-text-2);
+      text-align: center;
+      max-width: 68px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       PRODUCT CARDS
+    ═══════════════════════════════════════════════ */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 0 16px;
+    }
+
+    .product-card {
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform var(--tr-fast), box-shadow var(--tr-fast);
+      box-shadow: var(--shadow-sm);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .product-card:active { transform: scale(0.96); box-shadow: none; }
+
+    .product-img-wrap {
+      aspect-ratio: 1;
+      background: var(--c-input-bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-img-wrap .product-emoji {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+    }
+
+    .product-discount-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: var(--c-red);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .product-fav-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 30px;
+      height: 30px;
+      background: var(--c-surface);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      border: 1px solid var(--c-border);
+      transition: transform var(--tr-fast);
+    }
+    .product-fav-btn:active { transform: scale(0.85); }
+
+    .product-info {
+      padding: 10px 12px 12px;
+    }
+
+    .product-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+
+    .product-prices {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .product-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+
+    .product-old-price {
+      font-size: 12px;
+      color: var(--c-text-3);
+      text-decoration: line-through;
+    }
+
+    .product-add-btn {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px;
+      background: var(--c-accent);
+      color: #fff;
+      border-radius: var(--r-md);
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      transition: opacity var(--tr-fast), transform var(--tr-fast);
+    }
+    .product-add-btn:active { opacity: 0.8; transform: scale(0.97); }
+
+    /* Horizontal product list */
+    .products-h-scroll {
+      display: flex;
+      gap: 12px;
+      padding: 0 16px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .products-h-scroll::-webkit-scrollbar { display: none; }
+
+    .product-card-h {
+      flex-shrink: 0;
+      width: 150px;
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform var(--tr-fast);
+      box-shadow: var(--shadow-sm);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .product-card-h:active { transform: scale(0.95); }
+
+    .product-card-h .product-img-wrap { height: 130px; }
+    .product-card-h .product-img-wrap .product-emoji { font-size: 46px; }
+    .product-card-h .product-info { padding: 8px 10px 10px; }
+    .product-card-h .product-name { font-size: 12px; }
+    .product-card-h .product-price { font-size: 14px; }
+    .product-card-h .product-add-btn { font-size: 12px; padding: 6px; }
+
+    /* ═══════════════════════════════════════════════
+       PRODUCT PAGE
+    ═══════════════════════════════════════════════ */
+    #page-product {
+      z-index: 50;
+      background: var(--c-bg);
+    }
+
+    .product-gallery {
+      position: relative;
+      height: 300px;
+      background: var(--c-input-bg);
+      overflow: hidden;
+    }
+
+    .gallery-main-emoji {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 120px;
+    }
+
+    .gallery-dots {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 5px;
+    }
+    .gallery-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.6);
+      transition: width var(--tr-fast), background var(--tr-fast);
+    }
+    .gallery-dot.active { width: 18px; background: #fff; }
+
+    .back-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 36px;
+      height: 36px;
+      background: var(--c-surface);
+      backdrop-filter: var(--blur-md);
+      -webkit-backdrop-filter: var(--blur-md);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      border: 1px solid var(--c-border);
+      z-index: 5;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform var(--tr-fast);
+    }
+    .back-btn:active { transform: scale(0.9); }
+
+    .share-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      background: var(--c-surface);
+      backdrop-filter: var(--blur-md);
+      -webkit-backdrop-filter: var(--blur-md);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border: 1px solid var(--c-border);
+      z-index: 5;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .product-detail-body {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .product-detail-body::-webkit-scrollbar { display: none; }
+
+    .product-detail-content {
+      padding: 16px;
+    }
+
+    .product-detail-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .tag-sale { background: rgba(255,59,48,0.12); color: var(--c-red); }
+    .tag-new  { background: rgba(52,199,89,0.12); color: var(--c-green); }
+    .tag-hit  { background: rgba(255,159,10,0.12); color: var(--c-yellow); }
+
+    .product-detail-name {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: var(--f-display);
+      letter-spacing: -0.4px;
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+
+    .product-detail-prices {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .detail-price {
+      font-size: 26px;
+      font-weight: 700;
+      font-family: var(--f-display);
+    }
+
+    .detail-old-price {
+      font-size: 16px;
+      color: var(--c-text-3);
+      text-decoration: line-through;
+    }
+
+    .detail-discount {
+      background: var(--c-red);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 8px;
+    }
+
+    .stock-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .stock-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--c-green);
+    }
+    .stock-dot.low { background: var(--c-yellow); }
+    .stock-dot.out { background: var(--c-red); }
+
+    .stock-text {
+      font-size: 13px;
+      color: var(--c-text-2);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--c-border);
+      margin: 16px 0;
+    }
+
+    .desc-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .desc-text {
+      font-size: 14px;
+      color: var(--c-text-2);
+      line-height: 1.6;
+    }
+
+    .product-actions {
+      display: flex;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--c-nav-bg);
+      backdrop-filter: var(--blur-md);
+      -webkit-backdrop-filter: var(--blur-md);
+      border-top: 1px solid var(--c-border);
+    }
+
+    .btn-buy {
+      flex: 1;
+      padding: 14px;
+      background: var(--c-accent);
+      color: #fff;
+      border-radius: var(--r-lg);
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      transition: opacity var(--tr-fast), transform var(--tr-fast);
+    }
+    .btn-buy:active { opacity: 0.85; transform: scale(0.98); }
+
+    .btn-cart {
+      padding: 14px 18px;
+      background: var(--c-input-bg);
+      color: var(--c-text);
+      border-radius: var(--r-lg);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--tr-fast), transform var(--tr-fast);
+    }
+    .btn-cart:active { transform: scale(0.93); }
+
+    .btn-contact {
+      padding: 14px 18px;
+      background: rgba(52,199,89,0.15);
+      color: var(--c-green);
+      border-radius: var(--r-lg);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--tr-fast), transform var(--tr-fast);
+    }
+    .btn-contact:active { transform: scale(0.93); }
+
+    /* ═══════════════════════════════════════════════
+       CART PAGE
+    ═══════════════════════════════════════════════ */
+    .cart-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 40px 32px;
+    }
+
+    .cart-empty-icon { font-size: 64px; }
+    .cart-empty-title { font-size: 20px; font-weight: 700; text-align: center; }
+    .cart-empty-sub { font-size: 14px; color: var(--c-text-2); text-align: center; }
+
+    .cart-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .cart-item {
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cart-item-img {
+      width: 70px;
+      height: 70px;
+      border-radius: var(--r-md);
+      background: var(--c-input-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      flex-shrink: 0;
+    }
+
+    .cart-item-info { flex: 1; min-width: 0; }
+
+    .cart-item-name {
+      font-size: 14px;
+      font-weight: 600;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .cart-item-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--c-accent);
+    }
+
+    .cart-item-controls {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-top: 8px;
+    }
+
+    .qty-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--c-input-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--c-accent);
+      transition: background var(--tr-fast), transform var(--tr-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .qty-btn:active { transform: scale(0.88); background: var(--c-surface-2); }
+
+    .qty-val {
+      min-width: 28px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .cart-item-remove {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255,59,48,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--c-red);
+      flex-shrink: 0;
+      transition: transform var(--tr-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cart-item-remove:active { transform: scale(0.88); }
+
+    .cart-footer {
+      margin: 0 16px;
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-md);
+      -webkit-backdrop-filter: var(--blur-md);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cart-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .cart-total-label { font-size: 15px; color: var(--c-text-2); }
+    .cart-total-val   { font-size: 22px; font-weight: 700; }
+
+    .btn-checkout {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: var(--c-accent);
+      color: #fff;
+      border-radius: var(--r-lg);
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      transition: opacity var(--tr-fast), transform var(--tr-fast);
+    }
+    .btn-checkout:active { opacity: 0.85; transform: scale(0.98); }
+    .btn-checkout:disabled { background: var(--c-text-3); cursor: not-allowed; }
+
+    /* ═══════════════════════════════════════════════
+       PROFILE PAGE
+    ═══════════════════════════════════════════════ */
+    .profile-hero {
+      margin: 16px;
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-md);
+      -webkit-backdrop-filter: var(--blur-md);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-2xl);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .avatar {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--c-accent), var(--c-accent-2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: #fff;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .profile-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .profile-username {
+      font-size: 13px;
+      color: var(--c-text-2);
+      margin-bottom: 3px;
+    }
+
+    .profile-id {
+      font-size: 11px;
+      color: var(--c-text-3);
+    }
+
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 0 16px 16px;
+    }
+
+    .stat-card {
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-lg);
+      padding: 14px 10px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-val { font-size: 22px; font-weight: 700; font-family: var(--f-display); }
+    .stat-lbl { font-size: 11px; color: var(--c-text-2); margin-top: 2px; }
+
+    .menu-section {
+      margin: 0 16px 16px;
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--c-border);
+      cursor: pointer;
+      transition: background var(--tr-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:active { background: var(--c-input-bg); }
+
+    .menu-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--r-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .menu-text { flex: 1; font-size: 15px; font-weight: 500; }
+    .menu-arrow { font-size: 14px; color: var(--c-text-3); }
+
+    /* ═══════════════════════════════════════════════
+       ADMIN PANEL
+    ═══════════════════════════════════════════════ */
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 0 16px;
+    }
+
+    .admin-stat {
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .admin-stat-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .admin-stat-val {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: var(--f-display);
+    }
+
+    .admin-stat-lbl {
+      font-size: 12px;
+      color: var(--c-text-2);
+      margin-top: 2px;
+    }
+
+    .admin-stat-delta {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--c-green);
+      margin-top: 4px;
+    }
+
+    .admin-product-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .admin-product-item {
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .admin-product-img {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--r-md);
+      background: var(--c-input-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      flex-shrink: 0;
+    }
+
+    .admin-product-info { flex: 1; min-width: 0; }
+
+    .admin-product-name {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .admin-product-meta {
+      font-size: 12px;
+      color: var(--c-text-2);
+      margin-top: 3px;
+    }
+
+    .admin-product-actions { display: flex; gap: 6px; }
+
+    .admin-btn-sm {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: transform var(--tr-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .admin-btn-sm:active { transform: scale(0.88); }
+
+    .admin-btn-edit {
+      background: rgba(0,122,255,0.12);
+      color: var(--c-accent);
+    }
+
+    .admin-btn-del {
+      background: rgba(255,59,48,0.12);
+      color: var(--c-red);
+    }
+
+    .admin-orders-list { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+
+    .admin-order-item {
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .admin-order-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .admin-order-num {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .status-new      { background: rgba(0,122,255,0.12); color: var(--c-accent); }
+    .status-paid     { background: rgba(52,199,89,0.12); color: var(--c-green); }
+    .status-shipping { background: rgba(255,159,10,0.12); color: var(--c-yellow); }
+    .status-done     { background: rgba(0,0,0,0.08); color: var(--c-text-2); }
+    [data-theme="dark"] .status-done { background: rgba(255,255,255,0.08); }
+
+    .admin-order-meta { font-size: 13px; color: var(--c-text-2); }
+    .admin-order-total { font-size: 15px; font-weight: 700; margin-top: 4px; }
+
+    .admin-order-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+    .btn-status {
+      flex: 1;
+      padding: 8px;
+      background: var(--c-input-bg);
+      border-radius: var(--r-sm);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--c-text-2);
+      text-align: center;
+      transition: background var(--tr-fast), color var(--tr-fast);
+    }
+
+    .btn-status.btn-status-next {
+      background: rgba(0,122,255,0.12);
+      color: var(--c-accent);
+    }
+
+    /* Add product FAB */
+    .fab {
+      position: fixed;
+      bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+      right: 16px;
+      width: 52px;
+      height: 52px;
+      background: var(--c-accent);
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(0,122,255,0.4);
+      z-index: 90;
+      transition: transform var(--tr-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .fab.visible { display: flex; }
+    .fab:active { transform: scale(0.92); }
+
+    /* ═══════════════════════════════════════════════
+       MODAL / BOTTOM SHEET
+    ═══════════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+      opacity: 0;
+      transition: opacity var(--tr-normal);
+    }
+    .modal-overlay.visible { display: flex; }
+    .modal-overlay.shown { opacity: 1; }
+
+    .bottom-sheet {
+      width: 100%;
+      background: var(--c-bg);
+      border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+      padding: 8px 0 0;
+      max-height: 90vh;
+      overflow-y: auto;
+      scrollbar-width: none;
+      transform: translateY(100%);
+      transition: transform var(--tr-slow);
+    }
+    .bottom-sheet::-webkit-scrollbar { display: none; }
+    .modal-overlay.shown .bottom-sheet { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--c-text-3);
+      border-radius: 2px;
+      margin: 0 auto 16px;
+      opacity: 0.4;
+    }
+
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 700;
+      padding: 0 20px 16px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       FORM ELEMENTS
+    ═══════════════════════════════════════════════ */
+    .form-group { margin-bottom: 14px; padding: 0 20px; }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-text-2);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--c-input-bg);
+      border-radius: var(--r-md);
+      font-size: 15px;
+      color: var(--c-text);
+      border: 2px solid transparent;
+      transition: border-color var(--tr-fast), background var(--tr-fast);
+    }
+    .form-input:focus {
+      border-color: var(--c-accent);
+      background: var(--c-surface);
+    }
+
+    textarea.form-input {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      padding: 16px 20px calc(var(--safe-bottom) + 20px);
+    }
+
+    .btn-primary {
+      flex: 1;
+      padding: 14px;
+      background: var(--c-accent);
+      color: #fff;
+      border-radius: var(--r-lg);
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      transition: opacity var(--tr-fast);
+    }
+    .btn-primary:active { opacity: 0.8; }
+
+    .btn-secondary {
+      padding: 14px 20px;
+      background: var(--c-input-bg);
+      color: var(--c-text-2);
+      border-radius: var(--r-lg);
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      transition: background var(--tr-fast);
+    }
+    .btn-secondary:active { background: var(--c-surface-2); }
+
+    /* ═══════════════════════════════════════════════
+       TOAST NOTIFICATION
+    ═══════════════════════════════════════════════ */
+    #toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: var(--c-text);
+      color: var(--c-bg);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 999;
+      transition: transform var(--tr-normal);
+      white-space: nowrap;
+      box-shadow: var(--shadow-lg);
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ═══════════════════════════════════════════════
+       LOADING SPINNER
+    ═══════════════════════════════════════════════ */
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--c-border);
+      border-top-color: var(--c-accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 40px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ═══════════════════════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════════════════════ */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in {
+      animation: fadeSlideUp 0.35s cubic-bezier(0.4,0,0.2,1) both;
+    }
+
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    .pop { animation: pop 0.3s cubic-bezier(0.4,0,0.2,1); }
+
+    /* ═══════════════════════════════════════════════
+       FAVORITES HEART STATES
+    ═══════════════════════════════════════════════ */
+    .fav-active { color: var(--c-red); }
+
+    /* ═══════════════════════════════════════════════
+       ORDERS HISTORY IN PROFILE
+    ═══════════════════════════════════════════════ */
+    .orders-history { padding: 0 16px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+
+    .order-hist-item {
+      background: var(--c-card-bg);
+      backdrop-filter: var(--blur-sm);
+      -webkit-backdrop-filter: var(--blur-sm);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .order-hist-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .order-hist-num { font-size: 14px; font-weight: 600; }
+    .order-hist-date { font-size: 12px; color: var(--c-text-3); }
+    .order-hist-items { font-size: 13px; color: var(--c-text-2); margin-bottom: 4px; }
+    .order-hist-total { font-size: 15px; font-weight: 700; }
+
+    /* ═══════════════════════════════════════════════
+       ADMIN TABS
+    ═══════════════════════════════════════════════ */
+    .admin-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .admin-tabs::-webkit-scrollbar { display: none; }
+
+    .admin-tab {
+      flex-shrink: 0;
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--c-input-bg);
+      color: var(--c-text-2);
+      transition: background var(--tr-fast), color var(--tr-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .admin-tab.active {
+      background: var(--c-accent);
+      color: #fff;
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESPONSIVE HELPERS
+    ═══════════════════════════════════════════════ */
+    @media (min-width: 420px) {
+      .products-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+
+    /* ═══════════════════════════════════════════════
+       SKELETON LOADING
+    ═══════════════════════════════════════════════ */
+    .skeleton {
+      background: linear-gradient(90deg, var(--c-input-bg) 25%, var(--c-surface-2) 50%, var(--c-input-bg) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: var(--r-md);
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+  </style>
 </head>
 <body>
 
-    <h2>📱 Каталог Гаджетов</h2>
+<!-- ═══════════════════════════════════════════════════
+     TOAST
+═══════════════════════════════════════════════════ -->
+<div id="toast"></div>
 
-    <div class="product-grid">
-        <div class="product-card">
-            <div class="product-title">Google Pixel 7 8/128GB</div>
-            <div class="product-price">11 200 грн</div>
-            <button class="buy-btn" onclick="buyProduct('Google Pixel 7', 11200)">Купить</button>
+<!-- ═══════════════════════════════════════════════════
+     MODAL OVERLAY (Bottom Sheet)
+═══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="bottom-sheet" id="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div id="sheet-content"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     FAB — Add Product (Admin)
+═══════════════════════════════════════════════════ -->
+<button class="fab" id="fab-add" onclick="App.Admin.openAddProduct()">＋</button>
+
+<!-- ═══════════════════════════════════════════════════
+     APP SHELL
+═══════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- PAGES CONTAINER -->
+  <div id="pages">
+
+    <!-- ═══════════════ HOME PAGE ═══════════════ -->
+    <div class="page active" id="page-home">
+      <div class="page-header">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="page-title">🛍️ Магазин</div>
+            <div class="page-subtitle" id="greeting">Доброго дня!</div>
+          </div>
+          <div id="user-avatar-small" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#007AFF,#5856D6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0;">?</div>
         </div>
-        
-        <div class="product-card">
-            <div class="product-title">Samsung S23 Ultra (Выгорание)</div>
-            <div class="product-price">21 500 грн</div>
-            <button class="buy-btn" onclick="buyProduct('Samsung S23 Ultra', 21500)">Купить</button>
+      </div>
+
+      <div class="page-body" id="home-body">
+        <!-- Search -->
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" id="search-input" type="search" placeholder="Пошук товарів..." />
         </div>
+
+        <!-- Search Results (hidden by default) -->
+        <div id="search-results" style="display:none; padding:0 16px;">
+          <div class="section-title" style="margin-bottom:12px;">Результати пошуку</div>
+          <div class="products-grid" id="search-grid"></div>
+        </div>
+
+        <!-- Main Content (hidden during search) -->
+        <div id="home-main-content">
+          <!-- Banners -->
+          <div class="section">
+            <div class="banner-scroll" id="banners-container"></div>
+          </div>
+
+          <!-- Categories -->
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title">Категорії</div>
+              <button class="section-link" onclick="App.showAllCategories()">Всі</button>
+            </div>
+            <div class="cats-scroll" id="cats-container"></div>
+          </div>
+
+          <!-- Popular Products -->
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title">🔥 Популярні</div>
+              <button class="section-link" onclick="App.showAllProducts('popular')">Всі</button>
+            </div>
+            <div class="products-grid" id="popular-grid"></div>
+          </div>
+
+          <!-- New Arrivals -->
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title">✨ Новинки</div>
+              <button class="section-link" onclick="App.showAllProducts('new')">Всі</button>
+            </div>
+            <div class="products-h-scroll" id="new-grid"></div>
+          </div>
+
+          <!-- Recommended -->
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title">⭐ Рекомендовані</div>
+            </div>
+            <div class="products-grid" id="rec-grid"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <script>
-        // Инициализируем WebApp Телеграма
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачиваем приложение на весь экран телефона/компьютера
+    <!-- ═══════════════ PRODUCT PAGE ═══════════════ -->
+    <div class="page" id="page-product">
+      <div class="product-gallery" id="product-gallery">
+        <button class="back-btn" onclick="App.goBack()">‹</button>
+        <button class="share-btn" onclick="App.shareProduct()">⬆️</button>
+        <div class="gallery-main-emoji" id="gallery-emoji">📦</div>
+        <div class="gallery-dots" id="gallery-dots"></div>
+      </div>
 
-        function buyProduct(name, price) {
-            // Передаем данные о покупке обратно в нашего Python-бота в виде JSON-строки
-            const data = JSON.stringify({
-                product_name: name,
-                product_price: price
-            });
-            
-            tg.sendData(data); // Эта команда закрывает WebApp и шлет данные боту
+      <div class="product-detail-body">
+        <div class="product-detail-content" id="product-detail-content">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <div class="product-actions">
+        <button class="btn-buy" onclick="App.buyNow()">Купити зараз</button>
+        <button class="btn-cart" onclick="App.addToCartFromProduct()" title="До кошика">🛒</button>
+        <button class="btn-contact" onclick="App.contactSeller()" title="Зв'язатися">💬</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CART PAGE ═══════════════ -->
+    <div class="page" id="page-cart">
+      <div class="page-header">
+        <div class="page-title">🛒 Кошик</div>
+      </div>
+      <div class="page-body" id="cart-body"></div>
+    </div>
+
+    <!-- ═══════════════ PROFILE PAGE ═══════════════ -->
+    <div class="page" id="page-profile">
+      <div class="page-header">
+        <div class="page-title">👤 Профіль</div>
+      </div>
+      <div class="page-body" id="profile-body"></div>
+    </div>
+
+    <!-- ═══════════════ ADMIN PAGE ═══════════════ -->
+    <div class="page" id="page-admin">
+      <div class="page-header">
+        <div class="page-title">⚙️ Адмін-панель</div>
+        <div class="page-subtitle">Управління магазином</div>
+      </div>
+      <div class="page-body" id="admin-body"></div>
+    </div>
+
+  </div><!-- /pages -->
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav id="nav">
+    <button class="nav-item active" data-page="home" onclick="App.navigate('home')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">Головна</div>
+    </button>
+    <button class="nav-item" data-page="catalog" onclick="App.showAllProducts('all')">
+      <div class="nav-icon">🗂️</div>
+      <div class="nav-label">Каталог</div>
+    </button>
+    <button class="nav-item" data-page="cart" onclick="App.navigate('cart')">
+      <div class="nav-icon">🛒</div>
+      <div class="nav-label">Кошик</div>
+      <div class="nav-badge" id="cart-badge">0</div>
+    </button>
+    <button class="nav-item" data-page="profile" onclick="App.navigate('profile')">
+      <div class="nav-icon">👤</div>
+      <div class="nav-label">Профіль</div>
+    </button>
+    <button class="nav-item" data-page="admin" onclick="App.navigate('admin')">
+      <div class="nav-icon">⚙️</div>
+      <div class="nav-label">Адмін</div>
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   TELEGRAM SDK WRAPPER
+   Зручна обгортка над Telegram WebApp SDK
+═══════════════════════════════════════════════════════════════ */
+const TG = (() => {
+  const wa = window.Telegram?.WebApp;
+
+  // Ініціалізація
+  if (wa) {
+    wa.ready();
+    wa.expand();
+    wa.enableClosingConfirmation();
+  }
+
+  return {
+    /** Об'єкт користувача з Telegram */
+    user: wa?.initDataUnsafe?.user ?? null,
+
+    /** Підписані ініціальні дані для backend-верифікації */
+    initData: wa?.initData ?? '',
+
+    /** Колірна схема ('light' | 'dark') */
+    colorScheme: wa?.colorScheme ?? 'light',
+
+    /** Тема кольорів (ThemeParams) */
+    themeParams: wa?.themeParams ?? {},
+
+    /** Показати кнопку "Назад" у шапці Telegram */
+    showBackButton(callback) {
+      if (!wa) return;
+      wa.BackButton.show();
+      wa.BackButton.onClick(callback);
+    },
+
+    /** Сховати кнопку "Назад" */
+    hideBackButton() {
+      wa?.BackButton.hide();
+    },
+
+    /** Показати головну кнопку (синя кнопка внизу від Telegram) */
+    showMainButton(text, callback, color = '#007AFF') {
+      if (!wa) return;
+      wa.MainButton.setText(text);
+      wa.MainButton.color = color;
+      wa.MainButton.show();
+      wa.MainButton.onClick(callback);
+    },
+
+    /** Сховати головну кнопку */
+    hideMainButton() {
+      wa?.MainButton.hide();
+    },
+
+    /** Haptic feedback */
+    haptic: {
+      impact: (style = 'light') => wa?.HapticFeedback?.impactOccurred(style),
+      notify: (type = 'success') => wa?.HapticFeedback?.notificationOccurred(type),
+      select: () => wa?.HapticFeedback?.selectionChanged(),
+    },
+
+    /** Закрити Mini App */
+    close() { wa?.close(); },
+
+    /** Відкрити посилання */
+    openLink(url) { wa?.openLink(url); },
+
+    /** Відправити дані на бота */
+    sendData(data) { wa?.sendData(JSON.stringify(data)); },
+
+    /** Показати нативний алерт */
+    alert(msg, cb) { wa?.showAlert(msg, cb); },
+
+    /** Показати нативне підтвердження */
+    confirm(msg, cb) { wa?.showConfirm(msg, cb); },
+  };
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   API LAYER
+   Заглушка → легко замінити на реальний backend
+   Підтримує: Google Sheets / Supabase / Firebase / PostgreSQL
+═══════════════════════════════════════════════════════════════ */
+const API = (() => {
+  // ── Конфігурація ──────────────────────────────────
+  const CONFIG = {
+    BASE_URL: 'https://your-backend.com/api',   // ← замінити
+    USE_MOCK: true,                              // ← false = реальний API
+    ADMIN_IDS: [123456789],                      // ← Telegram IDs адмінів
+  };
+
+  // ── Базовий fetch з Telegram auth ─────────────────
+  async function request(method, path, body = null) {
+    if (CONFIG.USE_MOCK) {
+      return await MOCK.handle(method, path, body);
+    }
+
+    const res = await fetch(CONFIG.BASE_URL + path, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': TG.initData,   // Верифікація на backend
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+    return res.json();
+  }
+
+  // ── Публічне API ──────────────────────────────────
+  return {
+    products: {
+      getAll:  ()         => request('GET',    '/products'),
+      getById: (id)       => request('GET',    `/products/${id}`),
+      create:  (data)     => request('POST',   '/admin/products', data),
+      update:  (id, data) => request('PUT',    `/admin/products/${id}`, data),
+      delete:  (id)       => request('DELETE', `/admin/products/${id}`),
+    },
+    orders: {
+      create:  (data)        => request('POST',  '/orders', data),
+      getMyOrders: ()        => request('GET',   '/orders/my'),
+      getAll:  ()            => request('GET',   '/admin/orders'),
+      setStatus: (id, status)=> request('PATCH', `/admin/orders/${id}`, { status }),
+    },
+    users: {
+      me: ()           => request('GET', '/users/me'),
+      favorites: ()    => request('GET', '/users/favorites'),
+    },
+    isAdmin: () => CONFIG.ADMIN_IDS.includes(TG.user?.id),
+  };
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   MOCK DATA + MOCK API HANDLER
+   Демонстраційні дані; замінити на реальний backend
+═══════════════════════════════════════════════════════════════ */
+const MOCK = (() => {
+
+  // ── Тестові дані ──────────────────────────────────
+  let products = [
+    { id:1,  name:'iPhone 16 Pro Max',         emoji:'📱', price:49999, oldPrice:55000, discount:9,  stock:8,  category:'electronics', isNew:true,  isPopular:true,  isRec:false, description:'Флагманський смартфон Apple з чіпом A18 Pro, камерою 48Мп та дисплеєм 6.9" ProMotion 120Hz. Титановий корпус, USB-C 3.' },
+    { id:2,  name:'AirPods Pro 2',             emoji:'🎧', price:8999,  oldPrice:10999, discount:18, stock:20, category:'electronics', isNew:false, isPopular:true,  isRec:true,  description:'Навушники з активним шумопоглинанням ANC, прозорістю, Spatial Audio та до 30 год. роботи з кейсом.' },
+    { id:3,  name:'MacBook Air M3',            emoji:'💻', price:54990, oldPrice:59990, discount:8,  stock:5,  category:'electronics', isNew:true,  isPopular:false, isRec:true,  description:'Найлегший ноутбук Apple на чіпі M3. 8GB RAM, 256GB SSD, дисплей Liquid Retina 13.6". До 18 год. автономності.' },
+    { id:4,  name:'Nike Air Force 1',          emoji:'👟', price:3299,  oldPrice:3999,  discount:17, stock:15, category:'fashion',     isNew:false, isPopular:true,  isRec:false, description:'Культова біла шкіряна кросівка Nike. Доступна у розмірах 36-46. Нова колекція 2024 року.' },
+    { id:5,  name:'Крем SPF 50 Bioderma',      emoji:'🧴', price:649,   oldPrice:null,  discount:0,  stock:30, category:'beauty',      isNew:false, isPopular:false, isRec:true,  description:'Сонцезахисний крем SPF 50+ для чутливої шкіри. Легка текстура, водостійкий, без білих слідів.' },
+    { id:6,  name:'Зошит Moleskine A5',        emoji:'📓', price:459,   oldPrice:550,   discount:16, stock:50, category:'office',      isNew:false, isPopular:false, isRec:false, description:'Класичний нотатник Moleskine A5, в лінійку, тверда обкладинка, 240 стор. Еластична застібка.' },
+    { id:7,  name:'Кросівки Adidas Samba',     emoji:'🥿', price:4199,  oldPrice:4999,  discount:16, stock:7,  category:'fashion',     isNew:true,  isPopular:true,  isRec:true,  description:'Іконічна модель Adidas Samba у новому забарвленні. Шкіряний верх, гумова підошва, унісекс.' },
+    { id:8,  name:'Bluetooth колонка JBL',     emoji:'🔊', price:2499,  oldPrice:3200,  discount:22, stock:12, category:'electronics', isNew:false, isPopular:true,  isRec:false, description:'Портативна колонка JBL Flip 6 з 12 год. роботи, IPX7 захистом від води та потужним звуком.' },
+    { id:9,  name:'Антистрес Попіт',           emoji:'🟣', price:129,   oldPrice:null,  discount:0,  stock:100, category:'toys',       isNew:false, isPopular:false, isRec:false, description:'Силіконова антистрес іграшка Pop It. Різні форми та кольори. Безпечно для дітей від 3 років.' },
+    { id:10, name:'Парфум Chanel Chance',      emoji:'🌸', price:5490,  oldPrice:6200,  discount:11, stock:4,  category:'beauty',      isNew:false, isPopular:true,  isRec:true,  description:'Жіночий аромат Chanel Chance Eau Tendre, 50мл. Квіткові-фруктові ноти, легкий і свіжий.' },
+    { id:11, name:'Павербанк 20000mAh',        emoji:'🔋', price:1299,  oldPrice:1599,  discount:19, stock:25, category:'electronics', isNew:true,  isPopular:false, isRec:true,  description:'Портативний акумулятор 20000mAh з двома USB-A та одним USB-C. Швидка зарядка 22.5W.' },
+    { id:12, name:'Рюкзак The North Face',     emoji:'🎒', price:3899,  oldPrice:4500,  discount:13, stock:9,  category:'fashion',     isNew:false, isPopular:true,  isRec:false, description:'Міський рюкзак The North Face 30L. Ергономічна спинка, ноутбук-відсік до 15", водовідштовхувальна тканина.' },
+  ];
+
+  let orders = [
+    { id:'#1042', userId:null, items:[{productId:1,qty:1},{productId:2,qty:2}], total:67997, status:'shipping', date:'2024-12-01', userName:'Іван П.' },
+    { id:'#1041', userId:null, items:[{productId:4,qty:1}], total:3299, status:'paid', date:'2024-11-28', userName:'Оксана В.' },
+    { id:'#1040', userId:null, items:[{productId:7,qty:2},{productId:5,qty:1}], total:9047, status:'done', date:'2024-11-20', userName:'Дмитро К.' },
+  ];
+
+  // ── Mock request handler ───────────────────────────
+  async function handle(method, path, body) {
+    await delay(120);   // Імітація мережі
+
+    if (path === '/products' && method === 'GET') return [...products];
+    if (path.match(/^\/products\/\d+$/) && method === 'GET') {
+      const id = +path.split('/').pop();
+      return products.find(p => p.id === id) || null;
+    }
+    if (path === '/admin/products' && method === 'POST') {
+      const p = { id: Date.now(), ...body };
+      products.push(p);
+      return p;
+    }
+    if (path.match(/^\/admin\/products\/\d+$/) && method === 'PUT') {
+      const id = +path.split('/').pop();
+      const idx = products.findIndex(p => p.id === id);
+      if (idx !== -1) products[idx] = { ...products[idx], ...body };
+      return products[idx];
+    }
+    if (path.match(/^\/admin\/products\/\d+$/) && method === 'DELETE') {
+      const id = +path.split('/').pop();
+      products = products.filter(p => p.id !== id);
+      return { ok: true };
+    }
+    if (path === '/orders' && method === 'POST') {
+      const o = { id: `#${1000 + orders.length + 1}`, status:'new', date: new Date().toISOString().split('T')[0], userName: TG.user?.first_name ?? 'Клієнт', ...body };
+      orders.unshift(o);
+      return o;
+    }
+    if (path === '/orders/my' && method === 'GET') return orders.slice(0, 3);
+    if (path === '/admin/orders' && method === 'GET') return [...orders];
+    if (path.match(/^\/admin\/orders\/.+$/) && method === 'PATCH') {
+      const id = path.split('/').pop();
+      const o = orders.find(o => o.id === id);
+      if (o) o.status = body.status;
+      return o;
+    }
+    if (path === '/users/me' && method === 'GET') return { ...TG.user, orders: 3, favorites: 5 };
+    throw new Error(`Mock: No handler for ${method} ${path}`);
+  }
+
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  return { handle };
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   APP STATE (STORE)
+   Єдине джерело правди для стану додатку
+═══════════════════════════════════════════════════════════════ */
+const Store = (() => {
+  const state = {
+    currentPage:    'home',
+    prevPage:       null,
+    currentProduct: null,
+    products:       [],
+    cart:           JSON.parse(localStorage.getItem('cart') || '[]'),
+    favorites:      JSON.parse(localStorage.getItem('favs') || '[]'),
+    orders:         [],
+    user:           null,
+    adminTab:       'stats',
+  };
+
+  function saveCart()  { localStorage.setItem('cart', JSON.stringify(state.cart)); }
+  function saveFavs()  { localStorage.setItem('favs', JSON.stringify(state.favorites)); }
+
+  return {
+    get: () => state,
+
+    setProducts: (p) => { state.products = p; },
+
+    addToCart(productId) {
+      const item = state.cart.find(i => i.id === productId);
+      if (item) item.qty++;
+      else state.cart.push({ id: productId, qty: 1 });
+      saveCart();
+    },
+
+    removeFromCart(productId) {
+      state.cart = state.cart.filter(i => i.id !== productId);
+      saveCart();
+    },
+
+    updateQty(productId, delta) {
+      const item = state.cart.find(i => i.id === productId);
+      if (!item) return;
+      item.qty = Math.max(1, item.qty + delta);
+      saveCart();
+    },
+
+    toggleFav(productId) {
+      const idx = state.favorites.indexOf(productId);
+      if (idx === -1) state.favorites.push(productId);
+      else state.favorites.splice(idx, 1);
+      saveFavs();
+      return idx === -1;
+    },
+
+    isFav: (id) => state.favorites.includes(id),
+
+    cartCount: () => state.cart.reduce((s, i) => s + i.qty, 0),
+
+    cartTotal(products) {
+      return state.cart.reduce((sum, item) => {
+        const p = products.find(x => x.id === item.id);
+        return sum + (p ? p.price * item.qty : 0);
+      }, 0);
+    },
+
+    setPage(page)    { state.prevPage = state.currentPage; state.currentPage = page; },
+    setProduct(p)    { state.currentProduct = p; },
+    setUser(u)       { state.user = u; },
+    setOrders(o)     { state.orders = o; },
+    setAdminTab(t)   { state.adminTab = t; },
+  };
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   UI HELPERS
+═══════════════════════════════════════════════════════════════ */
+const UI = {
+  /** Форматування ціни */
+  price: (n) => n.toLocaleString('uk-UA') + ' ₴',
+
+  /** Показати toast */
+  toast(msg, duration = 2200) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), duration);
+  },
+
+  /** Оновити бейдж кошика */
+  updateCartBadge() {
+    const count = Store.cartCount();
+    const badge = document.getElementById('cart-badge');
+    badge.textContent = count;
+    badge.classList.toggle('visible', count > 0);
+  },
+
+  /** Відкрити bottom sheet */
+  openSheet(content) {
+    const overlay = document.getElementById('modal-overlay');
+    const sheet   = document.getElementById('sheet-content');
+    sheet.innerHTML = content;
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlay.classList.add('visible', 'shown');
+      });
+    });
+    overlay.onclick = (e) => { if (e.target === overlay) UI.closeSheet(); };
+  },
+
+  /** Закрити bottom sheet */
+  closeSheet() {
+    const overlay = document.getElementById('modal-overlay');
+    overlay.classList.remove('shown');
+    setTimeout(() => { overlay.classList.remove('visible'); overlay.style.display = ''; }, 400);
+  },
+
+  /** Рендер картки товару (grid) */
+  renderProductCard(p, horizontal = false) {
+    const isFav = Store.isFav(p.id);
+    const cls   = horizontal ? 'product-card-h' : 'product-card';
+    return `
+      <div class="${cls}" onclick="App.openProduct(${p.id})">
+        <div class="product-img-wrap">
+          <div class="product-emoji">${p.emoji}</div>
+          ${p.discount ? `<div class="product-discount-badge">-${p.discount}%</div>` : ''}
+          <button class="product-fav-btn ${isFav ? 'fav-active' : ''}" 
+                  onclick="event.stopPropagation(); App.toggleFav(${p.id}, this)"
+                  data-id="${p.id}">${isFav ? '❤️' : '🤍'}</button>
+        </div>
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          <div class="product-prices">
+            <span class="product-price">${UI.price(p.price)}</span>
+            ${p.oldPrice ? `<span class="product-old-price">${UI.price(p.oldPrice)}</span>` : ''}
+          </div>
+          <button class="product-add-btn" onclick="event.stopPropagation(); App.addToCart(${p.id})">
+            + До кошика
+          </button>
+        </div>
+      </div>`;
+  },
+};
+
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN APP CONTROLLER
+═══════════════════════════════════════════════════════════════ */
+const App = {
+
+  /* ── Ініціалізація ──────────────────────────── */
+  async init() {
+    // Застосувати тему Telegram
+    const theme = TG.colorScheme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // Привітання
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? 'Доброго ранку!' : hour < 18 ? 'Доброго дня!' : 'Доброго вечора!';
+    document.getElementById('greeting').textContent = greet;
+
+    // Аватар в header
+    const user = TG.user;
+    if (user) {
+      const av = document.getElementById('user-avatar-small');
+      av.textContent = (user.first_name?.[0] ?? '?').toUpperCase();
+    }
+
+    // Завантаження даних
+    await this.loadProducts();
+    this.renderHome();
+    UI.updateCartBadge();
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', (e) => this.onSearch(e.target.value));
+
+    // FAB видимість для адмінів
+    if (API.isAdmin()) {
+      document.getElementById('fab-add').classList.add('visible');
+    }
+  },
+
+  /* ── Завантаження товарів ───────────────────── */
+  async loadProducts() {
+    try {
+      const products = await API.products.getAll();
+      Store.setProducts(products);
+    } catch (e) {
+      UI.toast('Помилка завантаження ❌');
+    }
+  },
+
+  /* ── Рендер головної ────────────────────────── */
+  renderHome() {
+    const { products } = Store.get();
+
+    // Банери
+    const banners = [
+      { gradient:'linear-gradient(135deg,#007AFF,#5856D6)', badge:'🔥 SALE до -30%', title:'Розпродаж електроніки', sub:'Тільки цього тижня' },
+      { gradient:'linear-gradient(135deg,#FF9F0A,#FF375F)', badge:'✨ НОВИНКИ 2024', title:'Нова колекція взуття', sub:'Adidas, Nike, New Balance' },
+      { gradient:'linear-gradient(135deg,#34C759,#30B0C7)', badge:'⚡ АКЦІЯ', title:'1+1=3 на косметику', sub:'Bioderma, Chanel та інші' },
+    ];
+
+    document.getElementById('banners-container').innerHTML = banners.map(b => `
+      <div class="banner-card">
+        <div class="banner-bg" style="background:${b.gradient}"></div>
+        <div class="banner-content">
+          <div class="banner-badge">${b.badge}</div>
+          <div class="banner-title">${b.title}</div>
+          <div class="banner-sub">${b.sub}</div>
+        </div>
+      </div>`).join('');
+
+    // Категорії
+    const cats = [
+      { emoji:'📱', label:'Електроніка', id:'electronics', color:'linear-gradient(135deg,#007AFF22,#5856D622)' },
+      { emoji:'👗', label:'Мода',        id:'fashion',     color:'linear-gradient(135deg,#FF375F22,#FF9F0A22)' },
+      { emoji:'🧴', label:'Краса',       id:'beauty',      color:'linear-gradient(135deg,#FF2D5522,#FF6B9D22)' },
+      { emoji:'🏋️', label:'Спорт',       id:'sport',       color:'linear-gradient(135deg,#34C75922,#30B0C722)' },
+      { emoji:'🍕', label:'Їжа',         id:'food',        color:'linear-gradient(135deg,#FF9F0A22,#FF6B0022)' },
+      { emoji:'📚', label:'Книги',       id:'books',       color:'linear-gradient(135deg,#5856D622,#007AFF22)' },
+      { emoji:'🧸', label:'Іграшки',     id:'toys',        color:'linear-gradient(135deg,#FF6B9D22,#FF2D5522)' },
+      { emoji:'🏠', label:'Дім',         id:'home',        color:'linear-gradient(135deg,#30B0C722,#34C75922)' },
+    ];
+
+    document.getElementById('cats-container').innerHTML = cats.map(c => `
+      <div class="cat-chip" onclick="App.filterByCategory('${c.id}')">
+        <div class="cat-icon-wrap" style="background:${c.color}">${c.emoji}</div>
+        <div class="cat-label">${c.label}</div>
+      </div>`).join('');
+
+    // Популярні
+    const popular = products.filter(p => p.isPopular).slice(0, 4);
+    document.getElementById('popular-grid').innerHTML = popular.map(p => UI.renderProductCard(p)).join('');
+
+    // Новинки (горизонтальний скрол)
+    const newArr = products.filter(p => p.isNew).slice(0, 5);
+    document.getElementById('new-grid').innerHTML = newArr.map(p => UI.renderProductCard(p, true)).join('');
+
+    // Рекомендовані
+    const rec = products.filter(p => p.isRec).slice(0, 4);
+    document.getElementById('rec-grid').innerHTML = rec.map(p => UI.renderProductCard(p)).join('');
+  },
+
+  /* ── Навігація між сторінками ───────────────── */
+  navigate(page) {
+    TG.haptic.select();
+
+    // Сховати FAB скрізь крім адміна
+    const fab = document.getElementById('fab-add');
+    fab.classList.toggle('visible', page === 'admin' && API.isAdmin());
+
+    // Переключити сторінки
+    document.querySelectorAll('.page').forEach(el => {
+      el.classList.remove('active');
+      el.style.display = '';
+    });
+
+    const target = document.getElementById(`page-${page}`);
+    if (target) {
+      target.classList.add('active');
+      target.style.display = 'flex';
+    }
+
+    // Активний таб nav
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === page);
+    });
+
+    Store.setPage(page);
+
+    // Рендер сторінок
+    if (page === 'cart')    this.renderCart();
+    if (page === 'profile') this.renderProfile();
+    if (page === 'admin')   this.Admin.render();
+  },
+
+  /* ── Повернення назад ───────────────────────── */
+  goBack() {
+    TG.haptic.impact('light');
+    const { prevPage } = Store.get();
+    this.navigate(prevPage || 'home');
+    TG.hideBackButton();
+  },
+
+  /* ── Відкрити товар ─────────────────────────── */
+  async openProduct(id) {
+    TG.haptic.impact('light');
+    try {
+      const product = await API.products.getById(id);
+      if (!product) return;
+      Store.setProduct(product);
+      this.renderProductPage(product);
+      this.navigate('product');
+      TG.showBackButton(() => this.goBack());
+    } catch (e) {
+      UI.toast('Не вдалось завантажити товар');
+    }
+  },
+
+  /* ── Рендер сторінки товару ─────────────────── */
+  renderProductPage(p) {
+    // Emoji
+    document.getElementById('gallery-emoji').textContent = p.emoji;
+
+    // Dots (1 зображення = 1 крапка)
+    document.getElementById('gallery-dots').innerHTML = `<div class="gallery-dot active"></div>`;
+
+    // Деталі
+    const tags = [];
+    if (p.discount) tags.push(`<span class="tag tag-sale">-${p.discount}%</span>`);
+    if (p.isNew)    tags.push(`<span class="tag tag-new">Новинка</span>`);
+    if (p.isPopular)tags.push(`<span class="tag tag-hit">Хіт</span>`);
+
+    const stockText = p.stock > 10 ? 'В наявності' : p.stock > 0 ? `Лишилось ${p.stock} шт.` : 'Немає в наявності';
+    const stockCls  = p.stock > 10 ? '' : p.stock > 0 ? 'low' : 'out';
+    const isFav     = Store.isFav(p.id);
+
+    document.getElementById('product-detail-content').innerHTML = `
+      <div class="product-detail-tags">${tags.join('')}</div>
+      <div class="product-detail-name">${p.name}</div>
+      <div class="product-detail-prices">
+        <span class="detail-price">${UI.price(p.price)}</span>
+        ${p.oldPrice ? `<span class="detail-old-price">${UI.price(p.oldPrice)}</span>` : ''}
+        ${p.discount ? `<span class="detail-discount">-${p.discount}%</span>` : ''}
+      </div>
+      <div class="stock-info">
+        <div class="stock-dot ${stockCls}"></div>
+        <span class="stock-text">${stockText}</span>
+      </div>
+      <div class="divider"></div>
+      <div class="desc-title">Опис</div>
+      <div class="desc-text">${p.description}</div>
+      <div class="divider"></div>
+      <button onclick="App.toggleFav(${p.id}, this)" data-id="${p.id}"
+              style="display:flex;align-items:center;gap:8px;color:${isFav ? 'var(--c-red)':'var(--c-text-2)'};font-size:15px;font-weight:600;padding:4px 0;">
+        ${isFav ? '❤️ В обраному' : '🤍 Додати в обране'}
+      </button>
+    `;
+  },
+
+  /* ── Додати до кошика ───────────────────────── */
+  addToCart(productId) {
+    TG.haptic.impact('medium');
+    Store.addToCart(productId);
+    UI.updateCartBadge();
+    UI.toast('✅ Додано до кошика');
+  },
+
+  /* ── Додати до кошика зі сторінки товару ────── */
+  addToCartFromProduct() {
+    const { currentProduct } = Store.get();
+    if (!currentProduct) return;
+    this.addToCart(currentProduct.id);
+  },
+
+  /* ── Купити зараз ───────────────────────────── */
+  buyNow() {
+    const { currentProduct } = Store.get();
+    if (!currentProduct) return;
+    TG.haptic.impact('heavy');
+    Store.addToCart(currentProduct.id);
+    UI.updateCartBadge();
+    this.navigate('cart');
+  },
+
+  /* ── Зв'язатися з продавцем ─────────────────── */
+  contactSeller() {
+    TG.haptic.impact('light');
+    TG.openLink('https://t.me/your_shop_bot');
+    UI.toast('Відкриваємо чат 💬');
+  },
+
+  /* ── Поділитися товаром ─────────────────────── */
+  shareProduct() {
+    const { currentProduct } = Store.get();
+    if (!currentProduct) return;
+    UI.toast('Посилання скопійовано ✅');
+  },
+
+  /* ── Обрані ─────────────────────────────────── */
+  toggleFav(productId, btn) {
+    TG.haptic.impact('light');
+    const added = Store.toggleFav(productId);
+    if (btn) {
+      btn.textContent = added ? '❤️' : '🤍';
+      btn.classList.toggle('fav-active', added);
+      btn.classList.add('pop');
+      btn.addEventListener('animationend', () => btn.classList.remove('pop'), { once: true });
+    }
+    UI.toast(added ? '❤️ Додано в обране' : 'Видалено з обраного');
+  },
+
+  /* ── Пошук ──────────────────────────────────── */
+  onSearch(q) {
+    const mainContent   = document.getElementById('home-main-content');
+    const searchResults = document.getElementById('search-results');
+    const { products }  = Store.get();
+
+    if (!q.trim()) {
+      mainContent.style.display = '';
+      searchResults.style.display = 'none';
+      return;
+    }
+
+    mainContent.style.display = 'none';
+    searchResults.style.display = '';
+
+    const filtered = products.filter(p =>
+      p.name.toLowerCase().includes(q.toLowerCase()) ||
+      p.category.toLowerCase().includes(q.toLowerCase())
+    );
+
+    document.getElementById('search-grid').innerHTML = filtered.length
+      ? filtered.map(p => UI.renderProductCard(p)).join('')
+      : '<div style="grid-column:1/-1;text-align:center;padding:32px 0;color:var(--c-text-2);">Нічого не знайдено 🔍</div>';
+  },
+
+  /* ── Фільтр за категорією ───────────────────── */
+  filterByCategory(catId) {
+    TG.haptic.select();
+    const { products } = Store.get();
+    const filtered = products.filter(p => p.category === catId);
+
+    document.getElementById('search-input').value = catId;
+    this.onSearch(catId);
+
+    const searchGrid = document.getElementById('search-grid');
+    searchGrid.innerHTML = filtered.length
+      ? filtered.map(p => UI.renderProductCard(p)).join('')
+      : '<div style="grid-column:1/-1;text-align:center;padding:32px 0;color:var(--c-text-2);">Товари не знайдені</div>';
+  },
+
+  /* ── Показати всі товари ────────────────────── */
+  showAllProducts(filter) {
+    TG.haptic.select();
+    const { products } = Store.get();
+    let list = products;
+    if (filter === 'popular') list = products.filter(p => p.isPopular);
+    if (filter === 'new')     list = products.filter(p => p.isNew);
+
+    document.getElementById('search-input').value = filter;
+    document.getElementById('home-main-content').style.display = 'none';
+    document.getElementById('search-results').style.display = '';
+    document.getElementById('search-grid').innerHTML = list.map(p => UI.renderProductCard(p)).join('');
+  },
+
+  showAllCategories() {
+    UI.toast('Всі категорії 🗂️');
+  },
+
+  /* ── Рендер кошика ──────────────────────────── */
+  renderCart() {
+    const { cart, products } = Store.get();
+    const body = document.getElementById('cart-body');
+
+    if (!cart.length) {
+      body.innerHTML = `
+        <div class="cart-empty">
+          <div class="cart-empty-icon">🛒</div>
+          <div class="cart-empty-title">Кошик порожній</div>
+          <div class="cart-empty-sub">Додайте товари зі списку, щоб оформити замовлення</div>
+          <button onclick="App.navigate('home')" style="margin-top:8px;padding:12px 24px;background:var(--c-accent);color:#fff;border-radius:var(--r-lg);font-size:15px;font-weight:600;">
+            Перейти до магазину
+          </button>
+        </div>`;
+      return;
+    }
+
+    const items = cart.map(item => {
+      const p = products.find(x => x.id === item.id);
+      if (!p) return '';
+      return `
+        <div class="cart-item" id="cart-item-${p.id}">
+          <div class="cart-item-img">${p.emoji}</div>
+          <div class="cart-item-info">
+            <div class="cart-item-name">${p.name}</div>
+            <div class="cart-item-price">${UI.price(p.price * item.qty)}</div>
+            <div class="cart-item-controls">
+              <button class="qty-btn" onclick="App.updateQty(${p.id}, -1)">−</button>
+              <span class="qty-val" id="qty-${p.id}">${item.qty}</span>
+              <button class="qty-btn" onclick="App.updateQty(${p.id}, 1)">+</button>
+            </div>
+          </div>
+          <button class="cart-item-remove" onclick="App.removeFromCart(${p.id})">🗑</button>
+        </div>`;
+    }).join('');
+
+    const total = Store.cartTotal(products);
+
+    body.innerHTML = `
+      <div class="cart-list">${items}</div>
+      <div class="cart-footer">
+        <div class="cart-total-row">
+          <span class="cart-total-label">Сума замовлення</span>
+          <span class="cart-total-val">${UI.price(total)}</span>
+        </div>
+        <button class="btn-checkout" onclick="App.checkout()">
+          Оформити замовлення →
+        </button>
+      </div>`;
+  },
+
+  /* ── Оновити кількість ──────────────────────── */
+  updateQty(productId, delta) {
+    TG.haptic.select();
+    Store.updateQty(productId, delta);
+    UI.updateCartBadge();
+    this.renderCart();
+  },
+
+  /* ── Видалити з кошика ──────────────────────── */
+  removeFromCart(productId) {
+    TG.haptic.impact('medium');
+    Store.removeFromCart(productId);
+    UI.updateCartBadge();
+    this.renderCart();
+    UI.toast('Видалено з кошика');
+  },
+
+  /* ── Оформити замовлення ────────────────────── */
+  async checkout() {
+    TG.haptic.impact('heavy');
+    const { cart, products } = Store.get();
+    const total = Store.cartTotal(products);
+
+    UI.openSheet(`
+      <div class="sheet-title">📦 Оформлення замовлення</div>
+      <div class="form-group">
+        <label class="form-label">Ім'я та прізвище</label>
+        <input class="form-input" id="co-name" placeholder="Іван Іваненко" 
+               value="${TG.user?.first_name ?? ''} ${TG.user?.last_name ?? ''}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Телефон</label>
+        <input class="form-input" id="co-phone" type="tel" placeholder="+380991234567" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Місто та відділення Нової Пошти</label>
+        <input class="form-input" id="co-addr" placeholder="Київ, №12" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Коментар</label>
+        <textarea class="form-input" id="co-comment" placeholder="Необов'язково..."></textarea>
+      </div>
+      <div style="padding:0 20px 8px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:var(--c-text-2);font-size:14px;">Сума:</span>
+        <span style="font-size:20px;font-weight:700;">${UI.price(total)}</span>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="UI.closeSheet()">Скасувати</button>
+        <button class="btn-primary" onclick="App.submitOrder()">Замовити ✓</button>
+      </div>`);
+  },
+
+  /* ── Відправити замовлення ──────────────────── */
+  async submitOrder() {
+    const name    = document.getElementById('co-name')?.value;
+    const phone   = document.getElementById('co-phone')?.value;
+    const address = document.getElementById('co-addr')?.value;
+    const comment = document.getElementById('co-comment')?.value;
+
+    if (!name || !phone || !address) {
+      UI.toast('Заповніть обов\'язкові поля ⚠️');
+      return;
+    }
+
+    const { cart } = Store.get();
+    const { products } = Store.get();
+
+    try {
+      const order = await API.orders.create({
+        userId:  TG.user?.id,
+        items:   cart.map(i => ({ productId: i.id, qty: i.qty })),
+        total:   Store.cartTotal(products),
+        name, phone, address, comment,
+      });
+
+      // Надіслати дані боту
+      TG.sendData({ type: 'new_order', orderId: order.id });
+
+      // Очистити кошик
+      Store.get().cart.length = 0;
+      localStorage.removeItem('cart');
+      UI.updateCartBadge();
+
+      UI.closeSheet();
+      UI.toast(`✅ Замовлення ${order.id} оформлено!`, 3000);
+      TG.haptic.notify('success');
+
+      setTimeout(() => this.renderCart(), 300);
+    } catch (e) {
+      UI.toast('Помилка оформлення ❌');
+      TG.haptic.notify('error');
+    }
+  },
+
+  /* ── Рендер профілю ─────────────────────────── */
+  async renderProfile() {
+    const body = document.getElementById('profile-body');
+    const user = TG.user;
+
+    let orders = [];
+    try {
+      orders = await API.orders.getMyOrders();
+      Store.setOrders(orders);
+    } catch (e) {}
+
+    const initials = user ? (user.first_name?.[0] ?? '') + (user.last_name?.[0] ?? '') : '?';
+    const favCount = Store.get().favorites.length;
+
+    const statusLabels = { new:'Нове', paid:'Оплачено', shipping:'Доставляється', done:'Виконано' };
+    const statusColors = { new:'var(--c-accent)', paid:'var(--c-green)', shipping:'var(--c-yellow)', done:'var(--c-text-3)' };
+
+    body.innerHTML = `
+      <div class="profile-hero animate-in">
+        <div class="avatar">${initials || '👤'}</div>
+        <div>
+          <div class="profile-name">${user ? `${user.first_name} ${user.last_name ?? ''}` : 'Гість'}</div>
+          ${user?.username ? `<div class="profile-username">@${user.username}</div>` : ''}
+          <div class="profile-id">ID: ${user?.id ?? '—'}</div>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-card">
+          <div class="stat-val">${orders.length}</div>
+          <div class="stat-lbl">Замовлень</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${favCount}</div>
+          <div class="stat-lbl">Обраних</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">⭐ 5.0</div>
+          <div class="stat-lbl">Рейтинг</div>
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top:0">
+        <div class="section-title">Мої замовлення</div>
+      </div>
+      <div class="orders-history">
+        ${orders.map(o => `
+          <div class="order-hist-item">
+            <div class="order-hist-head">
+              <span class="order-hist-num">Замовлення ${o.id}</span>
+              <span class="status-badge status-${o.status}" style="color:${statusColors[o.status]}">${statusLabels[o.status]}</span>
+            </div>
+            <div class="order-hist-items">${o.items?.length ?? 0} товар(и)</div>
+            <div class="order-hist-total">${UI.price(o.total)}</div>
+          </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--c-text-2);">Замовлень ще немає</div>'}
+      </div>
+
+      <div class="section-head"><div class="section-title">Налаштування</div></div>
+      <div class="menu-section" style="margin-bottom:16px">
+        <div class="menu-item" onclick="App.showFavorites()">
+          <div class="menu-icon" style="background:rgba(255,59,48,0.1)">❤️</div>
+          <div class="menu-text">Обране</div>
+          <div class="menu-arrow">›</div>
+        </div>
+        <div class="menu-item" onclick="UI.toast('Повідомлення ввімкнені ✅')">
+          <div class="menu-icon" style="background:rgba(52,199,89,0.1)">🔔</div>
+          <div class="menu-text">Сповіщення</div>
+          <div class="menu-arrow">›</div>
+        </div>
+        <div class="menu-item" onclick="App.switchTheme()">
+          <div class="menu-icon" style="background:rgba(88,86,214,0.1)">🌙</div>
+          <div class="menu-text">Тема</div>
+          <div class="menu-arrow">›</div>
+        </div>
+        <div class="menu-item" onclick="TG.openLink('https://t.me/your_shop_bot')">
+          <div class="menu-icon" style="background:rgba(0,122,255,0.1)">💬</div>
+          <div class="menu-text">Підтримка</div>
+          <div class="menu-arrow">›</div>
+        </div>
+        <div class="menu-item" onclick="UI.toast('Про магазин v1.0 🛍️')">
+          <div class="menu-icon" style="background:rgba(255,159,10,0.1)">ℹ️</div>
+          <div class="menu-text">Про магазин</div>
+          <div class="menu-arrow">›</div>
+        </div>
+      </div>
+    `;
+  },
+
+  /* ── Обране ─────────────────────────────────── */
+  showFavorites() {
+    const { favorites, products } = Store.get();
+    const favProducts = products.filter(p => favorites.includes(p.id));
+
+    UI.openSheet(`
+      <div class="sheet-title">❤️ Обране (${favProducts.length})</div>
+      <div style="padding:0 16px 20px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+        ${favProducts.map(p => UI.renderProductCard(p)).join('') || 
+          '<div style="grid-column:1/-1;text-align:center;padding:32px 0;color:var(--c-text-2);">Список обраного порожній</div>'}
+      </div>`);
+  },
+
+  /* ── Перемкнути тему ────────────────────────── */
+  switchTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    UI.toast(next === 'dark' ? '🌙 Темна тема' : '☀️ Світла тема');
+  },
+
+  /* ══════════════════════════════════════════════
+     ADMIN MODULE
+  ══════════════════════════════════════════════ */
+  Admin: {
+
+    /* ── Рендер адмін-панелі ──────────────────── */
+    async render() {
+      const body = document.getElementById('admin-body');
+      const tab  = Store.get().adminTab;
+
+      body.innerHTML = `
+        <div class="admin-tabs">
+          <button class="admin-tab ${tab==='stats'?'active':''}" onclick="App.Admin.switchTab('stats')">📊 Статистика</button>
+          <button class="admin-tab ${tab==='products'?'active':''}" onclick="App.Admin.switchTab('products')">📦 Товари</button>
+          <button class="admin-tab ${tab==='orders'?'active':''}" onclick="App.Admin.switchTab('orders')">🧾 Замовлення</button>
+          <button class="admin-tab ${tab==='clients'?'active':''}" onclick="App.Admin.switchTab('clients')">👥 Клієнти</button>
+        </div>
+        <div id="admin-tab-content"></div>`;
+
+      this.renderTab(tab);
+    },
+
+    /* ── Перемкнути вкладку ───────────────────── */
+    switchTab(tab) {
+      TG.haptic.select();
+      Store.setAdminTab(tab);
+      document.querySelectorAll('.admin-tab').forEach(el => {
+        el.classList.toggle('active', el.textContent.includes(tab === 'stats' ? 'Статистика' : tab === 'products' ? 'Товари' : tab === 'orders' ? 'Замовлення' : 'Клієнти'));
+      });
+      this.renderTab(tab);
+    },
+
+    /* ── Рендер вкладки ───────────────────────── */
+    async renderTab(tab) {
+      const container = document.getElementById('admin-tab-content');
+      if (!container) return;
+
+      if (tab === 'stats') await this.renderStats(container);
+      if (tab === 'products') await this.renderProducts(container);
+      if (tab === 'orders') await this.renderOrders(container);
+      if (tab === 'clients') this.renderClients(container);
+    },
+
+    /* ── Статистика ───────────────────────────── */
+    async renderStats(container) {
+      const { products } = Store.get();
+      let orders = [];
+      try { orders = await API.orders.getAll(); } catch(e) {}
+
+      const revenue = orders.reduce((s, o) => s + o.total, 0);
+      const stats = [
+        { icon:'💰', val: UI.price(revenue),  lbl:'Виручка', delta:'▲ 12% за тиждень' },
+        { icon:'🧾', val: orders.length,       lbl:'Замовлень', delta:'▲ 3 нових' },
+        { icon:'📦', val: products.length,     lbl:'Товарів', delta:'Активних' },
+        { icon:'👥', val: '34',                lbl:'Клієнтів', delta:'▲ 5 нових' },
+      ];
+
+      container.innerHTML = `
+        <div class="admin-stats-grid animate-in">
+          ${stats.map(s => `
+            <div class="admin-stat">
+              <div class="admin-stat-icon">${s.icon}</div>
+              <div class="admin-stat-val">${s.val}</div>
+              <div class="admin-stat-lbl">${s.lbl}</div>
+              <div class="admin-stat-delta">${s.delta}</div>
+            </div>`).join('')}
+        </div>
+        <div class="section-head" style="margin-top:16px;">
+          <div class="section-title">Останні замовлення</div>
+        </div>
+        ${this.renderOrdersList(orders.slice(0,3))}`;
+    },
+
+    /* ── Список товарів (адмін) ───────────────── */
+    async renderProducts(container) {
+      const { products } = Store.get();
+      container.innerHTML = `
+        <div class="admin-product-list animate-in">
+          ${products.map(p => `
+            <div class="admin-product-item">
+              <div class="admin-product-img">${p.emoji}</div>
+              <div class="admin-product-info">
+                <div class="admin-product-name">${p.name}</div>
+                <div class="admin-product-meta">${UI.price(p.price)} · Залишок: ${p.stock}</div>
+              </div>
+              <div class="admin-product-actions">
+                <button class="admin-btn-sm admin-btn-edit" onclick="App.Admin.editProduct(${p.id})">✏️</button>
+                <button class="admin-btn-sm admin-btn-del"  onclick="App.Admin.deleteProduct(${p.id})">🗑</button>
+              </div>
+            </div>`).join('')}
+        </div>`;
+    },
+
+    /* ── Список замовлень (адмін) ─────────────── */
+    async renderOrders(container) {
+      let orders = [];
+      try { orders = await API.orders.getAll(); } catch(e) {}
+      container.innerHTML = `<div class="admin-orders-list animate-in">${this.renderOrdersList(orders)}</div>`;
+    },
+
+    /* ── Рендер рядків замовлень ──────────────── */
+    renderOrdersList(orders) {
+      const next = { new:'paid', paid:'shipping', shipping:'done' };
+      const nextLabel = { new:'Позначити оплаченим', paid:'Відправлено', shipping:'Виконано' };
+      const statusLabels = { new:'Нове', paid:'Оплачено', shipping:'Доставляється', done:'Виконано' };
+
+      return `<div class="admin-orders-list">${orders.map(o => `
+        <div class="admin-order-item" id="order-item-${o.id.replace('#','')}">
+          <div class="admin-order-head">
+            <span class="admin-order-num">Замовлення ${o.id}</span>
+            <span class="status-badge status-${o.status}">${statusLabels[o.status]}</span>
+          </div>
+          <div class="admin-order-meta">
+            👤 ${o.userName} · 📅 ${o.date}
+          </div>
+          <div class="admin-order-total">${UI.price(o.total)}</div>
+          ${next[o.status] ? `
+            <div class="admin-order-actions">
+              <button class="btn-status btn-status-next" onclick="App.Admin.updateOrderStatus('${o.id}','${next[o.status]}')">
+                ${nextLabel[o.status]}
+              </button>
+            </div>` : ''}
+        </div>`).join('')}</div>`;
+    },
+
+    /* ── Клієнти ──────────────────────────────── */
+    renderClients(container) {
+      const clients = [
+        { name:'Іван Петренко', username:'@ivan_p', orders:5, total:67490 },
+        { name:'Оксана Ваценко', username:'@oksana_v', orders:2, total:12800 },
+        { name:'Дмитро Коваль',  username:'@dm_koval',  orders:8, total:142300 },
+      ];
+      container.innerHTML = `
+        <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px;" class="animate-in">
+          ${clients.map(c => `
+            <div class="glass-card" style="padding:14px;display:flex;gap:12px;align-items:center;">
+              <div class="avatar" style="width:48px;height:48px;font-size:18px;">${c.name[0]}</div>
+              <div style="flex:1;">
+                <div style="font-size:14px;font-weight:600;">${c.name}</div>
+                <div style="font-size:12px;color:var(--c-text-2);">${c.username}</div>
+                <div style="font-size:12px;color:var(--c-text-2);margin-top:3px;">${c.orders} замовлень · ${UI.price(c.total)}</div>
+              </div>
+              <button onclick="UI.toast('Написати ${c.username}')" style="color:var(--c-accent);font-size:20px;">💬</button>
+            </div>`).join('')}
+        </div>`;
+    },
+
+    /* ── Оновити статус замовлення ────────────── */
+    async updateOrderStatus(orderId, status) {
+      TG.haptic.impact('medium');
+      try {
+        await API.orders.setStatus(orderId, status);
+        UI.toast(`✅ Статус оновлено`);
+        TG.haptic.notify('success');
+        await this.renderOrders(document.getElementById('admin-tab-content'));
+      } catch (e) {
+        UI.toast('Помилка оновлення ❌');
+      }
+    },
+
+    /* ── Форма додавання товару ───────────────── */
+    openAddProduct() {
+      TG.haptic.impact('light');
+      App.navigate('admin');
+      Store.setAdminTab('products');
+      UI.openSheet(`
+        <div class="sheet-title">📦 Новий товар</div>
+        ${this.productForm()}
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="UI.closeSheet()">Скасувати</button>
+          <button class="btn-primary" onclick="App.Admin.submitProduct()">Додати</button>
+        </div>`);
+    },
+
+    /* ── Форма редагування товару ─────────────── */
+    editProduct(id) {
+      TG.haptic.impact('light');
+      const { products } = Store.get();
+      const p = products.find(x => x.id === id);
+      if (!p) return;
+
+      UI.openSheet(`
+        <div class="sheet-title">✏️ Редагувати товар</div>
+        ${this.productForm(p)}
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="UI.closeSheet()">Скасувати</button>
+          <button class="btn-primary" onclick="App.Admin.submitProduct(${id})">Зберегти</button>
+        </div>`);
+    },
+
+    /* ── HTML форми товару ────────────────────── */
+    productForm(p = {}) {
+      return `
+        <div class="form-group">
+          <label class="form-label">Назва товару *</label>
+          <input class="form-input" id="pf-name" placeholder="Назва" value="${p.name ?? ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Emoji (іконка) *</label>
+          <input class="form-input" id="pf-emoji" placeholder="📦" value="${p.emoji ?? '📦'}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ціна (₴) *</label>
+          <input class="form-input" id="pf-price" type="number" placeholder="1999" value="${p.price ?? ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Стара ціна (₴)</label>
+          <input class="form-input" id="pf-oldprice" type="number" placeholder="2499" value="${p.oldPrice ?? ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Залишок на складі</label>
+          <input class="form-input" id="pf-stock" type="number" placeholder="10" value="${p.stock ?? 10}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Категорія</label>
+          <input class="form-input" id="pf-cat" placeholder="electronics" value="${p.category ?? ''}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Опис</label>
+          <textarea class="form-input" id="pf-desc" placeholder="Опис товару...">${p.description ?? ''}</textarea>
+        </div>`;
+    },
+
+    /* ── Зберегти товар ───────────────────────── */
+    async submitProduct(editId = null) {
+      const name     = document.getElementById('pf-name')?.value?.trim();
+      const emoji    = document.getElementById('pf-emoji')?.value?.trim() || '📦';
+      const price    = parseFloat(document.getElementById('pf-price')?.value);
+      const oldPrice = parseFloat(document.getElementById('pf-oldprice')?.value) || null;
+      const stock    = parseInt(document.getElementById('pf-stock')?.value) || 0;
+      const category = document.getElementById('pf-cat')?.value?.trim() || 'other';
+      const desc     = document.getElementById('pf-desc')?.value?.trim() || '';
+
+      if (!name || !price) { UI.toast('Заповніть обов\'язкові поля ⚠️'); return; }
+
+      const discount = oldPrice ? Math.round((1 - price/oldPrice) * 100) : 0;
+      const data = { name, emoji, price, oldPrice, discount, stock, category, description: desc, isNew: !editId, isPopular: false, isRec: false };
+
+      try {
+        if (editId) {
+          await API.products.update(editId, data);
+          UI.toast('✅ Товар оновлено');
+        } else {
+          await API.products.create(data);
+          UI.toast('✅ Товар додано');
         }
-    </script>
+        TG.haptic.notify('success');
+        await App.loadProducts();
+        UI.closeSheet();
+        setTimeout(() => this.renderProducts(document.getElementById('admin-tab-content')), 300);
+      } catch (e) {
+        UI.toast('Помилка збереження ❌');
+      }
+    },
+
+    /* ── Видалити товар ───────────────────────── */
+    deleteProduct(id) {
+      TG.haptic.impact('heavy');
+      TG.confirm('Видалити цей товар?', async (confirmed) => {
+        if (!confirmed) return;
+        try {
+          await API.products.delete(id);
+          await App.loadProducts();
+          UI.toast('🗑 Товар видалено');
+          this.renderProducts(document.getElementById('admin-tab-content'));
+        } catch (e) {
+          UI.toast('Помилка видалення ❌');
+        }
+      });
+    },
+  },
+};
+
+
+/* ═══════════════════════════════════════════════════════════════
+   СТАРТ
+═══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => App.init());
+
+/*
+ ═══════════════════════════════════════════════════════════════
+  ПІДКЛЮЧЕННЯ BACKEND (ІНСТРУКЦІЯ)
+ ═══════════════════════════════════════════════════════════════
+
+ 1. NODE.JS + EXPRESS
+    ──────────────────
+    // server.js
+    const express = require('express');
+    const { validateTelegramWebAppData } = require('./middleware/auth');
+    const app = express();
+    app.use(express.json());
+    app.use('/api', validateTelegramWebAppData);    // Верифікація підпису
+    app.use('/api/products', require('./routes/products'));
+    app.use('/api/orders',   require('./routes/orders'));
+    app.use('/api/admin',    require('./routes/admin'));
+    app.listen(3000);
+
+ 2. SUPABASE (найпростіше)
+    ──────────────────────
+    // В api.js змінити:
+    const CONFIG = { USE_MOCK: false, BASE_URL: 'https://xxx.supabase.co/rest/v1' };
+    // Або використовувати supabase-js напряму в додатку
+
+ 3. FIREBASE
+    ─────────
+    // Підключити CDN firebase і замінити MOCK на Firestore
+    import { initializeApp } from 'firebase/app';
+    import { getFirestore, collection, getDocs } from 'firebase/firestore';
+
+ 4. GOOGLE SHEETS (як тимчасова БД)
+    ──────────────────────────────
+    // Через Apps Script Web App або Sheets API
+    const CONFIG = { BASE_URL: 'https://script.google.com/macros/s/YOUR_ID/exec' };
+
+ 5. ВЕРИФІКАЦІЯ TELEGRAM ПІДПИСУ (Node.js)
+    ─────────────────────────────────────
+    const crypto = require('crypto');
+    function validateTelegramWebAppData(req, res, next) {
+      const initData = req.headers['x-telegram-init-data'];
+      const params   = new URLSearchParams(initData);
+      const hash     = params.get('hash');
+      params.delete('hash');
+      const dataCheckString = [...params.entries()]
+        .sort(([a],[b]) => a.localeCompare(b))
+        .map(([k,v]) => `${k}=${v}`).join('\n');
+      const secretKey = crypto.createHmac('sha256','WebAppData').update(BOT_TOKEN).digest();
+      const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+      if (hmac !== hash) return res.status(401).json({ error: 'Unauthorized' });
+      req.telegramUser = JSON.parse(params.get('user'));
+      next();
+    }
+
+ 6. БОТ (telegraf.js)
+    ──────────────────
+    const { Telegraf, Markup } = require('telegraf');
+    const bot = new Telegraf(process.env.BOT_TOKEN);
+    bot.start(ctx => ctx.reply('Вітаємо!', Markup.keyboard([
+      [Markup.button.webApp('🛍️ Відкрити магазин', 'https://your-app.com')]
+    ]).resize()));
+    bot.on('web_app_data', ctx => {
+      const data = JSON.parse(ctx.message.web_app_data.data);
+      // обробка даних від Mini App
+    });
+    bot.launch();
+
+═══════════════════════════════════════════════════════════════
+*/
+</script>
 </body>
 </html>
