@@ -2164,6 +2164,16 @@ const App = {
     console.log('TG user id:', TG.user?.id, typeof TG.user?.id);
     console.log('isAdmin:', API.isAdmin());
 
+    // Тимчасова кнопка діагностики — показує TG дані прямо на екрані
+    const dbg = document.createElement('button');
+    dbg.textContent = '🔍 Мій ID';
+    dbg.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:999;background:#007AFF;color:#fff;border:none;padding:10px 16px;border-radius:20px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,122,255,0.4)';
+    dbg.onclick = () => {
+      const info = `ID: ${TG.user?.id ?? 'null'}\nТип: ${typeof TG.user?.id}\nisAdmin: ${API.isAdmin()}\nls_admin: ${localStorage.getItem('is_admin')}`;
+      alert(info);
+    };
+    document.body.appendChild(dbg);
+
     // Показати адмін-таб та FAB тільки для адміна
     if (API.isAdmin()) {
       document.getElementById('nav-admin').style.display = '';
@@ -2365,7 +2375,7 @@ const App = {
   /* ── Зв'язатися з продавцем ─────────────────── */
   contactSeller() {
     TG.haptic.impact('light');
-    TG.openLink('https://t.me/magaz_av_bot');
+    TG.openLink('https://t.me/your_shop_bot');
     UI.toast('Відкриваємо чат 💬');
   },
 
@@ -2670,7 +2680,7 @@ const App = {
           <div class="menu-text">Тема</div>
           <div class="menu-arrow">›</div>
         </div>
-        <div class="menu-item" onclick="TG.openLink('https://t.me/magaz_av_bot')">
+        <div class="menu-item" onclick="TG.openLink('https://t.me/your_shop_bot')">
           <div class="menu-icon" style="background:rgba(0,122,255,0.1)">💬</div>
           <div class="menu-text">Підтримка</div>
           <div class="menu-arrow">›</div>
