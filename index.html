@@ -1808,9 +1808,12 @@ const API = (() => {
       favorites: ()    => request('GET', '/users/favorites'),
     },
     isAdmin: () => {
-      // В Telegram — проверяем по ID пользователя
-      if (TG.user?.id) return CONFIG.ADMIN_IDS.includes(TG.user.id);
-      // В браузере (тест) — проверяем сохранённый флаг
+      const id = TG.user?.id;
+      // Сравниваем и как число и как строку — Telegram иногда шлёт строку
+      if (id !== undefined && id !== null) {
+        return CONFIG.ADMIN_IDS.includes(Number(id)) || CONFIG.ADMIN_IDS.includes(String(id));
+      }
+      // В браузере без Telegram — по localStorage флагу
       return localStorage.getItem('is_admin') === 'true';
     },
   };
@@ -2155,6 +2158,11 @@ const App = {
 
     // Search
     document.getElementById('search-input').addEventListener('input', (e) => this.onSearch(e.target.value));
+
+    // Debug: показать ID в консоли
+    console.log('TG user:', TG.user);
+    console.log('TG user id:', TG.user?.id, typeof TG.user?.id);
+    console.log('isAdmin:', API.isAdmin());
 
     // Показати адмін-таб та FAB тільки для адміна
     if (API.isAdmin()) {
