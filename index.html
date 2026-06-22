@@ -1808,12 +1808,12 @@ const API = (() => {
       favorites: ()    => request('GET', '/users/favorites'),
     },
     isAdmin: () => {
+      // В Telegram — по ID
       const id = TG.user?.id;
-      // Сравниваем и как число и как строку — Telegram иногда шлёт строку
-      if (id !== undefined && id !== null) {
+      if (id != null) {
         return CONFIG.ADMIN_IDS.includes(Number(id)) || CONFIG.ADMIN_IDS.includes(String(id));
       }
-      // В браузере без Telegram — по localStorage флагу
+      // В браузере (GitHub Pages, хостинг) — по localStorage флагу
       return localStorage.getItem('is_admin') === 'true';
     },
   };
@@ -2125,11 +2125,35 @@ const App = {
     this._adminTapTimer = setTimeout(() => { this._adminTaps = 0; }, 2000);
     if (this._adminTaps >= 5) {
       this._adminTaps = 0;
+      // Показать поле ввода пароля
+      UI.openSheet(`
+        <div class="sheet-title">🔐 Вхід адміна</div>
+        <div class="form-group">
+          <label class="form-label">Пароль</label>
+          <input class="form-input" id="admin-pass-input" type="password" placeholder="Введи пароль..." />
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="UI.closeSheet()">Скасувати</button>
+          <button class="btn-primary" onclick="App.checkAdminPassword()">Увійти</button>
+        </div>`);
+      setTimeout(() => document.getElementById('admin-pass-input')?.focus(), 300);
+    }
+  },
+
+  /* ── Проверка пароля админа ─────────────────── */
+  checkAdminPassword() {
+    const pass = document.getElementById('admin-pass-input')?.value;
+    // Пароль — твой Telegram ID
+    if (pass === '756822185') {
       localStorage.setItem('is_admin', 'true');
+      UI.closeSheet();
       document.getElementById('nav-admin').style.display = '';
       document.getElementById('fab-add').classList.add('visible');
       TG.haptic.notify('success');
       UI.toast('⚙️ Режим адміна увімкнено');
+    } else {
+      TG.haptic.notify('error');
+      UI.toast('❌ Невірний пароль');
     }
   },
 
@@ -2158,21 +2182,6 @@ const App = {
 
     // Search
     document.getElementById('search-input').addEventListener('input', (e) => this.onSearch(e.target.value));
-
-    // Debug: показать ID в консоли
-    console.log('TG user:', TG.user);
-    console.log('TG user id:', TG.user?.id, typeof TG.user?.id);
-    console.log('isAdmin:', API.isAdmin());
-
-    // Тимчасова кнопка діагностики — показує TG дані прямо на екрані
-    const dbg = document.createElement('button');
-    dbg.textContent = '🔍 Мій ID';
-    dbg.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:999;background:#007AFF;color:#fff;border:none;padding:10px 16px;border-radius:20px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,122,255,0.4)';
-    dbg.onclick = () => {
-      const info = `ID: ${TG.user?.id ?? 'null'}\nТип: ${typeof TG.user?.id}\nisAdmin: ${API.isAdmin()}\nls_admin: ${localStorage.getItem('is_admin')}`;
-      alert(info);
-    };
-    document.body.appendChild(dbg);
 
     // Показати адмін-таб та FAB тільки для адміна
     if (API.isAdmin()) {
