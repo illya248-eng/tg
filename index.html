@@ -1535,7 +1535,7 @@
       <div class="page-header">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
-            <div class="page-title">🛍️ Магазин</div>
+            <div class="page-title" id="shop-title" onclick="App.secretAdminTap()">🛍️ Магазин</div>
             <div class="page-subtitle" id="greeting">Доброго дня!</div>
           </div>
           <div id="user-avatar-small" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#007AFF,#5856D6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0;">?</div>
@@ -1807,7 +1807,12 @@ const API = (() => {
       me: ()           => request('GET', '/users/me'),
       favorites: ()    => request('GET', '/users/favorites'),
     },
-    isAdmin: () => CONFIG.ADMIN_IDS.includes(TG.user?.id),
+    isAdmin: () => {
+      // В Telegram — проверяем по ID пользователя
+      if (TG.user?.id) return CONFIG.ADMIN_IDS.includes(TG.user.id);
+      // В браузере (тест) — проверяем сохранённый флаг
+      return localStorage.getItem('is_admin') === 'true';
+    },
   };
 })();
 
@@ -2107,6 +2112,23 @@ ${lines}
    MAIN APP CONTROLLER
 ═══════════════════════════════════════════════════════════════ */
 const App = {
+
+  /* ── Секретный вход в админку (5 тапов по заголовку) ── */
+  _adminTaps: 0,
+  _adminTapTimer: null,
+  secretAdminTap() {
+    this._adminTaps++;
+    clearTimeout(this._adminTapTimer);
+    this._adminTapTimer = setTimeout(() => { this._adminTaps = 0; }, 2000);
+    if (this._adminTaps >= 5) {
+      this._adminTaps = 0;
+      localStorage.setItem('is_admin', 'true');
+      document.getElementById('nav-admin').style.display = '';
+      document.getElementById('fab-add').classList.add('visible');
+      TG.haptic.notify('success');
+      UI.toast('⚙️ Режим адміна увімкнено');
+    }
+  },
 
   /* ── Ініціалізація ──────────────────────────── */
   async init() {
