@@ -1764,9 +1764,10 @@ const TG = (() => {
 const API = (() => {
   // ── Конфігурація ──────────────────────────────────
   const CONFIG = {
-    BASE_URL: 'https://your-backend.com/api',   // ← замінити
-    USE_MOCK: true,                              // ← false = реальний API
-    ADMIN_IDS: [756822185],                      // ← Telegram IDs адмінів
+    BASE_URL: 'https://your-backend.com/api',
+    USE_MOCK: true,
+    // Пароль хранится как SHA-256 хеш — ID не используется
+    // Хеш устанавливается при первом входе через 5 тапов
   };
 
   // ── Базовий fetch з Telegram auth ─────────────────
@@ -1807,15 +1808,7 @@ const API = (() => {
       me: ()           => request('GET', '/users/me'),
       favorites: ()    => request('GET', '/users/favorites'),
     },
-    isAdmin: () => {
-      // В Telegram — по ID
-      const id = TG.user?.id;
-      if (id != null) {
-        return CONFIG.ADMIN_IDS.includes(Number(id)) || CONFIG.ADMIN_IDS.includes(String(id));
-      }
-      // В браузере (GitHub Pages, хостинг) — по localStorage флагу
-      return localStorage.getItem('is_admin') === 'true';
-    },
+    isAdmin: () => localStorage.getItem('is_admin') === 'true',
   };
 })();
 
@@ -2116,7 +2109,13 @@ ${lines}
 ═══════════════════════════════════════════════════════════════ */
 const App = {
 
-  /* ── Секретный вход в админку (5 тапов по заголовку) ── */
+  /* ── Хеширование пароля (SHA-256) ──────────────── */
+  async _hashPassword(pass) {
+    const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  },
+
+  /* ── Секретный вход — 5 тапов по заголовку ─────── */
   _adminTaps: 0,
   _adminTapTimer: null,
   secretAdminTap() {
@@ -2125,36 +2124,69 @@ const App = {
     this._adminTapTimer = setTimeout(() => { this._adminTaps = 0; }, 2000);
     if (this._adminTaps >= 5) {
       this._adminTaps = 0;
-      // Показать поле ввода пароля
+      const hasHash = !!localStorage.getItem('admin_hash');
       UI.openSheet(`
-        <div class="sheet-title">🔐 Вхід адміна</div>
+        <div class="sheet-title">🔐 ${hasHash ? 'Вхід адміна' : 'Встановити пароль'}</div>
+        ${!hasHash ? `<div style="padding:0 20px 12px;font-size:14px;color:var(--c-text-2);line-height:1.6;">Перший вхід — придумай пароль адміна.<br>Запам'ятай його, відновити неможливо.</div>` : ''}
         <div class="form-group">
-          <label class="form-label">Пароль</label>
-          <input class="form-input" id="admin-pass-input" type="password" placeholder="Введи пароль..." />
+          <label class="form-label">${hasHash ? 'Пароль' : 'Новий пароль'}</label>
+          <input class="form-input" id="admin-pass-input" type="password"
+                 placeholder="Мінімум 6 символів..."
+                 onkeydown="if(event.key==='Enter') App.checkAdminPassword()" />
         </div>
+        ${!hasHash ? `
+        <div class="form-group">
+          <label class="form-label">Повторіть пароль</label>
+          <input class="form-input" id="admin-pass-input2" type="password"
+                 placeholder="Повторіть пароль..."
+                 onkeydown="if(event.key==='Enter') App.checkAdminPassword()" />
+        </div>` : ''}
         <div class="form-actions">
           <button class="btn-secondary" onclick="UI.closeSheet()">Скасувати</button>
-          <button class="btn-primary" onclick="App.checkAdminPassword()">Увійти</button>
+          <button class="btn-primary" onclick="App.checkAdminPassword()">
+            ${hasHash ? 'Увійти' : 'Встановити'}
+          </button>
         </div>`);
-      setTimeout(() => document.getElementById('admin-pass-input')?.focus(), 300);
+      setTimeout(() => document.getElementById('admin-pass-input')?.focus(), 350);
     }
   },
 
-  /* ── Проверка пароля админа ─────────────────── */
-  checkAdminPassword() {
-    const pass = document.getElementById('admin-pass-input')?.value;
-    // Пароль — твой Telegram ID
-    if (pass === '756822185') {
-      localStorage.setItem('is_admin', 'true');
-      UI.closeSheet();
-      document.getElementById('nav-admin').style.display = '';
-      document.getElementById('fab-add').classList.add('visible');
-      TG.haptic.notify('success');
-      UI.toast('⚙️ Режим адміна увімкнено');
-    } else {
-      TG.haptic.notify('error');
-      UI.toast('❌ Невірний пароль');
+  /* ── Проверка / установка пароля ────────────────── */
+  async checkAdminPassword() {
+    const pass  = document.getElementById('admin-pass-input')?.value;
+    const pass2 = document.getElementById('admin-pass-input2')?.value;
+    const savedHash = localStorage.getItem('admin_hash');
+
+    if (!pass || pass.length < 6) {
+      UI.toast('⚠️ Мінімум 6 символів'); return;
     }
+
+    if (!savedHash) {
+      // Первый вход — установить пароль
+      if (pass !== pass2) { UI.toast('❌ Паролі не збігаються'); return; }
+      const hash = await this._hashPassword(pass);
+      localStorage.setItem('admin_hash', hash);
+      this._activateAdmin();
+    } else {
+      // Проверить пароль
+      const hash = await this._hashPassword(pass);
+      if (hash === savedHash) {
+        this._activateAdmin();
+      } else {
+        TG.haptic.notify('error');
+        UI.toast('❌ Невірний пароль');
+      }
+    }
+  },
+
+  /* ── Активировать админ режим ───────────────────── */
+  _activateAdmin() {
+    localStorage.setItem('is_admin', 'true');
+    UI.closeSheet();
+    document.getElementById('nav-admin').style.display = '';
+    document.getElementById('fab-add').classList.add('visible');
+    TG.haptic.notify('success');
+    UI.toast('⚙️ Режим адміна увімкнено');
   },
 
   /* ── Ініціалізація ──────────────────────────── */
@@ -2699,6 +2731,11 @@ const App = {
           <div class="menu-icon" style="background:rgba(255,159,10,0.1)">🤖</div>
           <div class="menu-text">Токен бота</div>
           <div class="menu-arrow" id="bot-token-status">${TelegramNotify.getToken() ? '✅' : '⚠️'}</div>
+        </div>
+        <div class="menu-item" onclick="App.logoutAdmin()">
+          <div class="menu-icon" style="background:rgba(255,59,48,0.1)">🚪</div>
+          <div class="menu-text">Вийти з адміна</div>
+          <div class="menu-arrow">›</div>
         </div>` : ''}
         <div class="menu-item" onclick="UI.toast('Про магазин v1.0 🛍️')">
           <div class="menu-icon" style="background:rgba(0,0,0,0.06)">ℹ️</div>
@@ -2720,6 +2757,15 @@ const App = {
         ${favProducts.map(p => UI.renderProductCard(p)).join('') || 
           '<div style="grid-column:1/-1;text-align:center;padding:32px 0;color:var(--c-text-2);">Список обраного порожній</div>'}
       </div>`);
+  },
+
+  /* ── Выйти из админки ───────────────────────── */
+  logoutAdmin() {
+    localStorage.removeItem('is_admin');
+    document.getElementById('nav-admin').style.display = 'none';
+    document.getElementById('fab-add').classList.remove('visible');
+    this.navigate('home');
+    UI.toast('Вийшли з режиму адміна');
   },
 
   /* ── Настройки токена бота ──────────────────── */
