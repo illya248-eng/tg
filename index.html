@@ -1766,7 +1766,7 @@ const API = (() => {
   const CONFIG = {
     BASE_URL: 'https://your-backend.com/api',   // ← замінити
     USE_MOCK: true,                              // ← false = реальний API
-    ADMIN_IDS: [123456789],                      // ← Telegram IDs адмінів
+    ADMIN_IDS: [756822185],                      // ← Telegram IDs адмінів
   };
 
   // ── Базовий fetch з Telegram auth ─────────────────
@@ -2028,6 +2028,75 @@ const UI = {
           </button>
         </div>
       </div>`;
+  },
+};
+
+
+/* ═══════════════════════════════════════════════════════════════
+   TELEGRAM NOTIFY
+   Отправка уведомления о заказе напрямую через Bot API
+   Токен хранится в localStorage — не светится в коде
+═══════════════════════════════════════════════════════════════ */
+const TelegramNotify = {
+  ADMIN_CHAT_ID: 756822185,
+
+  /** Получить токен из localStorage */
+  getToken() {
+    return localStorage.getItem('tg_bot_token') || '';
+  },
+
+  /** Сохранить токен */
+  saveToken(token) {
+    localStorage.setItem('tg_bot_token', token.trim());
+  },
+
+  /** Отправить сообщение админу */
+  async send(text) {
+    const token = this.getToken();
+    if (!token) {
+      console.warn('Токен бота не задан. Введи его в Профиль → Настройки бота.');
+      return false;
+    }
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: this.ADMIN_CHAT_ID,
+          text,
+          parse_mode: 'HTML',
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) console.error('Telegram API error:', data);
+      return data.ok;
+    } catch (e) {
+      console.error('Ошибка отправки в Telegram:', e);
+      return false;
+    }
+  },
+
+  /** Сформировать и отправить уведомление о заказе */
+  async notifyNewOrder(order, items, products) {
+    const lines = items.map(i => {
+      const p = products.find(x => x.id === i.productId);
+      return p ? `  ${p.emoji} ${p.name} × ${i.qty} — ${UI.price(p.price * i.qty)}` : '';
+    }).filter(Boolean).join('\n');
+
+    const text =
+`🛒 <b>Новый заказ ${order.id}</b>
+
+👤 <b>Клиент:</b> ${order.name}
+📞 <b>Телефон:</b> ${order.phone}
+📍 <b>Адрес:</b> ${order.address}
+${order.comment ? `💬 <b>Комментарий:</b> ${order.comment}\n` : ''}
+<b>Товары:</b>
+${lines}
+
+💰 <b>Сумма: ${UI.price(order.total)}</b>
+📅 ${new Date().toLocaleString('uk-UA')}`;
+
+    return await this.send(text);
   },
 };
 
@@ -2454,19 +2523,23 @@ const App = {
       return;
     }
 
-    const { cart } = Store.get();
-    const { products } = Store.get();
+    const { cart, products } = Store.get();
+    const items = cart.map(i => ({ productId: i.id, qty: i.qty }));
 
     try {
       const order = await API.orders.create({
         userId:  TG.user?.id,
-        items:   cart.map(i => ({ productId: i.id, qty: i.qty })),
+        items,
         total:   Store.cartTotal(products),
         name, phone, address, comment,
       });
 
-      // Надіслати дані боту
-      TG.sendData({ type: 'new_order', orderId: order.id });
+      // Отправить уведомление напрямую через Bot API
+      const sent = await TelegramNotify.notifyNewOrder(
+        { ...order, name, phone, address, comment },
+        items,
+        products
+      );
 
       // Очистити кошик
       Store.get().cart.length = 0;
@@ -2476,6 +2549,10 @@ const App = {
       UI.closeSheet();
       UI.toast(`✅ Замовлення ${order.id} оформлено!`, 3000);
       TG.haptic.notify('success');
+
+      if (!sent) {
+        setTimeout(() => UI.toast('⚠️ Введи токен бота в налаштуваннях', 3500), 1500);
+      }
 
       setTimeout(() => this.renderCart(), 300);
     } catch (e) {
@@ -2563,8 +2640,13 @@ const App = {
           <div class="menu-text">Підтримка</div>
           <div class="menu-arrow">›</div>
         </div>
+        <div class="menu-item" onclick="App.openBotSettings()">
+          <div class="menu-icon" style="background:rgba(255,159,10,0.1)">🤖</div>
+          <div class="menu-text">Токен бота</div>
+          <div class="menu-arrow" id="bot-token-status">${TelegramNotify.getToken() ? '✅' : '⚠️'}</div>
+        </div>
         <div class="menu-item" onclick="UI.toast('Про магазин v1.0 🛍️')">
-          <div class="menu-icon" style="background:rgba(255,159,10,0.1)">ℹ️</div>
+          <div class="menu-icon" style="background:rgba(0,0,0,0.06)">ℹ️</div>
           <div class="menu-text">Про магазин</div>
           <div class="menu-arrow">›</div>
         </div>
@@ -2583,6 +2665,58 @@ const App = {
         ${favProducts.map(p => UI.renderProductCard(p)).join('') || 
           '<div style="grid-column:1/-1;text-align:center;padding:32px 0;color:var(--c-text-2);">Список обраного порожній</div>'}
       </div>`);
+  },
+
+  /* ── Настройки токена бота ──────────────────── */
+  openBotSettings() {
+    const current = TelegramNotify.getToken();
+    UI.openSheet(`
+      <div class="sheet-title">🤖 Токен бота</div>
+      <div style="padding:0 20px 12px;font-size:14px;color:var(--c-text-2);line-height:1.6;">
+        Токен нужен чтобы заказы приходили тебе в Telegram.<br>
+        Получи его у <b>@BotFather</b> → /token
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bot Token</label>
+        <input class="form-input" id="bot-token-input"
+               type="password"
+               placeholder="1234567890:AAFxxx..."
+               value="${current}" />
+      </div>
+      <div style="padding:0 20px 8px;font-size:12px;color:var(--c-text-3);">
+        Сохраняется локально на устройстве, никуда не отправляется.
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="UI.closeSheet()">Отмена</button>
+        <button class="btn-primary" onclick="App.saveBotToken()">Сохранить</button>
+      </div>`);
+  },
+
+  /* ── Сохранить токен ─────────────────────────── */
+  async saveBotToken() {
+    const token = document.getElementById('bot-token-input')?.value?.trim();
+    if (!token) { UI.toast('Введи токен ⚠️'); return; }
+
+    // Проверить токен через getMe
+    try {
+      const res  = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+      const data = await res.json();
+      if (!data.ok) { UI.toast('Неверный токен ❌'); return; }
+
+      TelegramNotify.saveToken(token);
+      UI.closeSheet();
+      UI.toast(`✅ Бот @${data.result.username} подключён`);
+      TG.haptic.notify('success');
+
+      // Обновить иконку статуса
+      const statusEl = document.getElementById('bot-token-status');
+      if (statusEl) statusEl.textContent = '✅';
+
+      // Тестовое сообщение
+      await TelegramNotify.send(`✅ Бот <b>@${data.result.username}</b> успешно подключён к магазину!\n\nТеперь новые заказы будут приходить сюда.`);
+    } catch (e) {
+      UI.toast('Ошибка проверки токена ❌');
+    }
   },
 
   /* ── Перемкнути тему ────────────────────────── */
