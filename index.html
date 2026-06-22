@@ -1668,7 +1668,7 @@
       <div class="nav-icon">👤</div>
       <div class="nav-label">Профіль</div>
     </button>
-    <button class="nav-item" data-page="admin" onclick="App.navigate('admin')">
+    <button class="nav-item" data-page="admin" id="nav-admin" onclick="App.navigate('admin')" style="display:none">
       <div class="nav-icon">⚙️</div>
       <div class="nav-label">Адмін</div>
     </button>
@@ -2132,8 +2132,9 @@ const App = {
     // Search
     document.getElementById('search-input').addEventListener('input', (e) => this.onSearch(e.target.value));
 
-    // FAB видимість для адмінів
+    // Показати адмін-таб та FAB тільки для адміна
     if (API.isAdmin()) {
+      document.getElementById('nav-admin').style.display = '';
       document.getElementById('fab-add').classList.add('visible');
     }
   },
@@ -2230,7 +2231,14 @@ const App = {
     // Рендер сторінок
     if (page === 'cart')    this.renderCart();
     if (page === 'profile') this.renderProfile();
-    if (page === 'admin')   this.Admin.render();
+    if (page === 'admin') {
+      if (!API.isAdmin()) {
+        UI.toast('⛔ Доступ заборонено');
+        this.navigate('home');
+        return;
+      }
+      this.Admin.render();
+    }
   },
 
   /* ── Повернення назад ───────────────────────── */
