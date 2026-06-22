@@ -2039,14 +2039,16 @@ const UI = {
 ═══════════════════════════════════════════════════════════════ */
 const TelegramNotify = {
   ADMIN_CHAT_ID: 756822185,
+  // Токен хранится только здесь — покупатели его не видят
+  // Для смены токена — только через админку
+  BOT_TOKEN: localStorage.getItem('tg_bot_token') || '',
 
-  /** Получить токен из localStorage */
   getToken() {
-    return localStorage.getItem('tg_bot_token') || '';
+    return this.BOT_TOKEN;
   },
 
-  /** Сохранить токен */
   saveToken(token) {
+    this.BOT_TOKEN = token.trim();
     localStorage.setItem('tg_bot_token', token.trim());
   },
 
@@ -2557,11 +2559,6 @@ const App = {
       UI.closeSheet();
       UI.toast(`✅ Замовлення ${order.id} оформлено!`, 3000);
       TG.haptic.notify('success');
-
-      if (!sent) {
-        setTimeout(() => UI.toast('⚠️ Введи токен бота в налаштуваннях', 3500), 1500);
-      }
-
       setTimeout(() => this.renderCart(), 300);
     } catch (e) {
       UI.toast('Помилка оформлення ❌');
@@ -2648,11 +2645,12 @@ const App = {
           <div class="menu-text">Підтримка</div>
           <div class="menu-arrow">›</div>
         </div>
+        ${API.isAdmin() ? `
         <div class="menu-item" onclick="App.openBotSettings()">
           <div class="menu-icon" style="background:rgba(255,159,10,0.1)">🤖</div>
           <div class="menu-text">Токен бота</div>
           <div class="menu-arrow" id="bot-token-status">${TelegramNotify.getToken() ? '✅' : '⚠️'}</div>
-        </div>
+        </div>` : ''}
         <div class="menu-item" onclick="UI.toast('Про магазин v1.0 🛍️')">
           <div class="menu-icon" style="background:rgba(0,0,0,0.06)">ℹ️</div>
           <div class="menu-text">Про магазин</div>
